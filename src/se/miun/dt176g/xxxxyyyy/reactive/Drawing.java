@@ -2,6 +2,7 @@ package se.miun.dt176g.xxxxyyyy.reactive;
 
 
 import java.awt.Graphics;
+import java.util.ArrayList;
 
 
 /**
@@ -18,21 +19,23 @@ import java.awt.Graphics;
 public class Drawing implements Drawable {
 
 
-	// private SomeContainer shapes;
+	private ArrayList<Shape> shapes;  // här vetekatten om det bästa är en arraylist men vi kör på det så länge
 
-	
+
 	/**
 	 * <h1>addShape</h1> add a shape to the "SomeContainer shapes"
-	 * 
+	 *
 	 * @param s a {@link Shape} object.
 	 */
 	public void addShape(Shape s) {
-		
+		shapes.add(s);
 	}
 
 
 	@Override
 	public void draw(Graphics g) {
+
+		//shapes.forEach(shape -> draw(g));
 
 		// iterate over all shapes and draw them using the draw-method found in
 		// each concrete subclass.

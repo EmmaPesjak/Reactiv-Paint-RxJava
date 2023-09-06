@@ -1,6 +1,12 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
+import io.reactivex.rxjava3.subjects.PublishSubject;
+
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.*;
 
 /**
@@ -16,12 +22,12 @@ import javax.swing.*;
 public class DrawingPanel extends JPanel {
 
 	private Drawing drawing;
-	
 
-	public DrawingPanel() {
+
+	public DrawingPanel(Menu menu) {
 		drawing = new Drawing();
 	}
-	
+
 	public void redraw() {
 		repaint();
 	}

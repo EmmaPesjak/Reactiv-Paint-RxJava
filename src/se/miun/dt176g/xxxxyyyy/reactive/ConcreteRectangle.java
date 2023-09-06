@@ -1,7 +1,7 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
-import java.awt.Graphics;
-import java.awt.Graphics2D;
+import java.awt.*;
+import java.awt.event.MouseEvent;
 
 /**
  * <h1>ConcreteRectangle</h1> Creates a Rectangle-object.
@@ -12,6 +12,15 @@ import java.awt.Graphics2D;
  */
 
 public class ConcreteRectangle extends Shape {
+
+    public ConcreteRectangle(Color color, int thickness) {
+        super(color, thickness);
+    }
+
+    @Override
+    public void handleMouseEvent(MouseEvent e) {
+
+    }
 
     @Override
     public void draw(Graphics g) {

@@ -4,6 +4,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import java.awt.*;
 
 /**
  * <h1>Menu</h1> 
@@ -15,6 +16,11 @@ import javax.swing.JOptionPane;
 public class Menu extends JMenuBar {
 
 	private static final long serialVersionUID = 1L;  // Vad är denna till?
+
+	public Color selectedColor = Color.PINK; // Default color.
+	public int selectedThickness = 1; // Default thickness.
+	public String selectedTool = "Freehand"; // Default tool type.
+
 
 	/**
 	 * Constructor for the options menu, sets the frame.
@@ -65,26 +71,26 @@ public class Menu extends JMenuBar {
 		thicknessMenu = new JMenu("Thickness");
 		this.add(thicknessMenu);
 		menuItem = new JMenuItem("Thin");
-		menuItem.addActionListener(e -> thicknessEvent(frame, "Thin"));
+		menuItem.addActionListener(e -> thicknessEvent(frame, 1));
 		thicknessMenu.add(menuItem);
 		menuItem = new JMenuItem("Medium");
-		menuItem.addActionListener(e -> thicknessEvent(frame, "Medium"));
+		menuItem.addActionListener(e -> thicknessEvent(frame, 2));
 		thicknessMenu.add(menuItem);
 		menuItem = new JMenuItem("Thick");
-		menuItem.addActionListener(e -> thicknessEvent(frame, "Thick"));
+		menuItem.addActionListener(e -> thicknessEvent(frame, 3));
 		thicknessMenu.add(menuItem);
 
 		// Color menu.
 		colorMenu = new JMenu("Color");
 		this.add(colorMenu);
 		menuItem = new JMenuItem("Pink");
-		menuItem.addActionListener(e -> colorEvent(frame, "Pink"));
+		menuItem.addActionListener(e -> colorEvent(frame, Color.PINK));
 		colorMenu.add(menuItem);
-		menuItem = new JMenuItem("Purple");
-		menuItem.addActionListener(e ->  colorEvent(frame, "Purple"));
+		menuItem = new JMenuItem("Cyan");
+		menuItem.addActionListener(e ->  colorEvent(frame, Color.CYAN));
 		colorMenu.add(menuItem);
 		menuItem = new JMenuItem("Green");
-		menuItem.addActionListener(e ->  colorEvent(frame, "Green"));
+		menuItem.addActionListener(e ->  colorEvent(frame, Color.GREEN));
 		colorMenu.add(menuItem);
 	}
 
@@ -99,18 +105,21 @@ public class Menu extends JMenuBar {
 	}
 	
 	private void clearEvent(MainFrame frame) {
-		
+		frame.clearFrame();
 	}
 
 	private void toolEvent(MainFrame frame, String tool) {
-
+		selectedTool = tool; // Update the selected tool.
+		System.out.println(selectedTool);
 	}
 
-	private void thicknessEvent(MainFrame frame, String thickness) {
-
+	private void thicknessEvent(MainFrame frame, int thickness) {
+		selectedThickness = thickness; // Update the selected thickness.
+		System.out.println(selectedThickness);
 	}
 
-	private void colorEvent(MainFrame frame, String color) {
-
+	private void colorEvent(MainFrame frame, Color color) {
+		selectedColor = color; // Update the selected color.
+		System.out.println(selectedColor);
 	}
 }

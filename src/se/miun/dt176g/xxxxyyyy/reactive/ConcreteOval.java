@@ -1,7 +1,7 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
-import java.awt.Graphics;
-import java.awt.Graphics2D;
+import java.awt.*;
+import java.awt.event.MouseEvent;
 
 /**
  * <h1>ConcreteOval</h1> Creates a Circle-object.
@@ -15,6 +15,15 @@ import java.awt.Graphics2D;
  */
 
 public class ConcreteOval extends Shape {
+
+	public ConcreteOval(Color color, int thickness) {
+		super(color, thickness);
+	}
+
+	@Override
+	public void handleMouseEvent(MouseEvent e) {
+
+	}
 
 	@Override
 	public void draw(Graphics g) {

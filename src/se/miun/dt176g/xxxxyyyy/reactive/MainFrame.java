@@ -16,7 +16,9 @@ import javax.swing.*;
 public class MainFrame extends JFrame {
 
 	private String header;
-	private DrawingPanel drawingPanel;
+	private Menu menu = new Menu(this);
+	private DrawingPanel drawingPanel = new DrawingPanel(menu);
+
 
 	public MainFrame() {
 
@@ -32,12 +34,25 @@ public class MainFrame extends JFrame {
 		this.setLayout(new BorderLayout());
 
 		// Creates all necessary objects and adds them to the MainFrame (just one object right now)
-		drawingPanel = new DrawingPanel();
+		//drawingPanel = new DrawingPanel();
 		drawingPanel.setBounds(0, 0, getWidth(), getHeight());
 		this.getContentPane().add(drawingPanel, BorderLayout.CENTER);
 
-		this.setJMenuBar(new Menu(this));
+		//menu = new Menu(this);
+		this.setJMenuBar(menu);
 
+	}
+
+	// vete katten om detta kommer fungera men det får jag testa i framtiden :)
+	public void clearFrame() {
+//		this.removeAll();
+//		this.repaint();
+//		this.revalidate();
+//
+//		drawingPanel = new DrawingPanel();
+//		drawingPanel.setBounds(0, 0, getWidth(), getHeight());
+//		this.getContentPane().add(drawingPanel, BorderLayout.CENTER);
+//		this.setJMenuBar(new Menu(this));
 	}
 
 

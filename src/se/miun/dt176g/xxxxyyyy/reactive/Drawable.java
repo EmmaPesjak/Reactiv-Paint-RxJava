@@ -2,14 +2,13 @@ package se.miun.dt176g.xxxxyyyy.reactive;
 
 /**
  * <h1>Drawable</h1>
- * <p>
- * 
- * @author 	--YOUR NAME HERE--
+ * Drawable interface.
+ * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2022-09-08
+ * @since 	2022-09-06
  */
 
 @FunctionalInterface
-interface Drawable {
+public interface Drawable {
 	void draw(java.awt.Graphics g);
 }

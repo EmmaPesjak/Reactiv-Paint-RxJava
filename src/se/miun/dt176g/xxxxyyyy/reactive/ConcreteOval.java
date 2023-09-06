@@ -4,7 +4,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 
 /**
- * <h1>ConcreteShape</h1> Creates a Circle-object.
+ * <h1>ConcreteOval</h1> Creates a Circle-object.
  * Concrete class which extends Shape.
  * In other words, this class represents ONE type of shape
  * i.e. a circle, rectangle, n-sided regular polygon (if that's your thing)
@@ -14,7 +14,7 @@ import java.awt.Graphics2D;
  * @since 	2022-09-08
  */
 
-public class ConcreteShape extends Shape {
+public class ConcreteOval extends Shape {
 
 	@Override
 	public void draw(Graphics g) {

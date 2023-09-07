@@ -120,4 +120,12 @@ public class DrawingPanel extends JPanel {
 			shape.draw(g);
 		}
 	}
+
+	/**
+	 * Clear the drawing.
+	 */
+	public void clearDrawing() {
+		drawing.clear(); // Assuming you have a clear method in your Drawing class
+		repaint(); // Redraw the panel to reflect the cleared drawing
+	}
 }

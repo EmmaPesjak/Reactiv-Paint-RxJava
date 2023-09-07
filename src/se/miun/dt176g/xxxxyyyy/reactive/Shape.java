@@ -30,12 +30,6 @@ public abstract class Shape implements Drawable {
      * {@inheritDoc}
      */
     @Override
-    public void removeShape(Shape shape) {}
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public List<Shape> getShapes() {
         return new ArrayList<>();
     }

@@ -19,12 +19,6 @@ public interface Drawable {
 	void addShape(Shape shape);
 
 	/**
-	 * Removes a shape from the shapes list.
-	 * @param shape a {@link Shape} object.
-	 */
-	void removeShape(Shape shape);  // behöver jag detta när jag ska cleara??
-
-	/**
 	 * Getter for the list of shapes.
 	 * @return the list of Shapes.
 	 */

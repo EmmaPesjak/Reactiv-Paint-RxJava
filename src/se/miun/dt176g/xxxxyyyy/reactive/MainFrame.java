@@ -12,6 +12,7 @@ import javax.swing.*;
  */
 @SuppressWarnings("serial")
 public class MainFrame extends JFrame {
+	DrawingPanel drawingPanel;
 
 	/**
 	 * Constructor setting the layout and interface.
@@ -31,7 +32,7 @@ public class MainFrame extends JFrame {
 		// Creates all necessary objects and adds them to the MainFrame.
 		Drawing drawing = new Drawing();
 		Menu menu = new Menu(this);
-		DrawingPanel drawingPanel = new DrawingPanel(drawing, menu);
+		drawingPanel = new DrawingPanel(drawing, menu);
 		drawingPanel.setBounds(0, 0, getWidth(), getHeight());
 		this.getContentPane().add(drawingPanel, BorderLayout.CENTER);
 
@@ -39,16 +40,10 @@ public class MainFrame extends JFrame {
 		this.setJMenuBar(menu);
 	}
 
-	// vete katten om detta kommer fungera men det får jag testa i framtiden :)
-	// nä kanske snarare ska cleara listan med shapes på någon vänster??
+	/**
+	 * Clears the frame by removing the shapes drawn.
+	 */
 	public void clearFrame() {
-//		this.removeAll();
-//		this.repaint();
-//		this.revalidate();
-//
-//		drawingPanel = new DrawingPanel();
-//		drawingPanel.setBounds(0, 0, getWidth(), getHeight());
-//		this.getContentPane().add(drawingPanel, BorderLayout.CENTER);
-//		this.setJMenuBar(new Menu(this));
+		drawingPanel.clearDrawing();
 	}
 }

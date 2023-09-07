@@ -22,19 +22,18 @@ public class Drawing implements Drawable {
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * Clear the list of shapes.
 	 */
-	@Override
-	public void addShape(Shape shape) {
-		shapes.add(shape);
+	public void clear() {
+		shapes.clear();
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
-	@Override // behöver jag till clear sen?
-	public void removeShape(Shape shape) {
-		shapes.remove(shape);
+	@Override
+	public void addShape(Shape shape) {
+		shapes.add(shape);
 	}
 
 	/**

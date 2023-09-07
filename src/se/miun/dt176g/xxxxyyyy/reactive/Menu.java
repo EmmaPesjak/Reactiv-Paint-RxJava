@@ -11,19 +11,16 @@ import java.awt.*;
  * Creates the menu in the GUI.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-06
+ * @since 	2023-09-07
  */
 public class Menu extends JMenuBar {
-
-	private static final long serialVersionUID = 1L;  // Vad är denna till?
-
+	private static final long serialVersionUID = 1L;  // Ta bort denna?
 	public Color selectedColor = Color.PINK; // Default color.
-	public int selectedThickness = 1; // Default thickness.
+	public int selectedThickness = 2; // Default thickness.
 	public String selectedTool = "Freehand"; // Default tool type.
 
-
 	/**
-	 * Constructor for the options menu, sets the frame.
+	 * Constructor for the options' menu, sets the frame.
 	 * @param frame is the Swing frame.
 	 */
 	public Menu(MainFrame frame) {
@@ -55,45 +52,64 @@ public class Menu extends JMenuBar {
 		toolMenu = new JMenu("Tools/Shapes");
 		this.add(toolMenu);
 		menuItem = new JMenuItem("Rectangle");
-		menuItem.addActionListener(e -> toolEvent(frame, "Rectangle"));
+		menuItem.addActionListener(e -> toolEvent("Rectangle"));
 		toolMenu.add(menuItem);
 		menuItem = new JMenuItem("Oval");
-		menuItem.addActionListener(e -> toolEvent(frame, "Oval"));
+		menuItem.addActionListener(e -> toolEvent("Oval"));
 		toolMenu.add(menuItem);
 		menuItem = new JMenuItem("Line");
-		menuItem.addActionListener(e -> toolEvent(frame, "Line"));
+		menuItem.addActionListener(e -> toolEvent("Line"));
 		toolMenu.add(menuItem);
 		menuItem = new JMenuItem("Freehand");
-		menuItem.addActionListener(e -> toolEvent(frame, "Freehand"));
+		menuItem.addActionListener(e -> toolEvent("Freehand"));
 		toolMenu.add(menuItem);
 
 		// Thickness menu.
 		thicknessMenu = new JMenu("Thickness");
 		this.add(thicknessMenu);
 		menuItem = new JMenuItem("Thin");
-		menuItem.addActionListener(e -> thicknessEvent(frame, 1));
+		menuItem.addActionListener(e -> thicknessEvent(2));
 		thicknessMenu.add(menuItem);
 		menuItem = new JMenuItem("Medium");
-		menuItem.addActionListener(e -> thicknessEvent(frame, 2));
+		menuItem.addActionListener(e -> thicknessEvent(4));
 		thicknessMenu.add(menuItem);
 		menuItem = new JMenuItem("Thick");
-		menuItem.addActionListener(e -> thicknessEvent(frame, 3));
+		menuItem.addActionListener(e -> thicknessEvent(6));
 		thicknessMenu.add(menuItem);
 
 		// Color menu.
 		colorMenu = new JMenu("Color");
 		this.add(colorMenu);
 		menuItem = new JMenuItem("Pink");
-		menuItem.addActionListener(e -> colorEvent(frame, Color.PINK));
+		menuItem.addActionListener(e -> colorEvent(Color.PINK));
 		colorMenu.add(menuItem);
 		menuItem = new JMenuItem("Cyan");
-		menuItem.addActionListener(e ->  colorEvent(frame, Color.CYAN));
+		menuItem.addActionListener(e ->  colorEvent(Color.CYAN));
 		colorMenu.add(menuItem);
 		menuItem = new JMenuItem("Green");
-		menuItem.addActionListener(e ->  colorEvent(frame, Color.GREEN));
+		menuItem.addActionListener(e ->  colorEvent(Color.GREEN));
+		colorMenu.add(menuItem);
+		menuItem = new JMenuItem("Red");
+		menuItem.addActionListener(e ->  colorEvent(Color.RED));
+		colorMenu.add(menuItem);
+		menuItem = new JMenuItem("Blue");
+		menuItem.addActionListener(e ->  colorEvent(Color.BLUE));
+		colorMenu.add(menuItem);
+		menuItem = new JMenuItem("Magenta");
+		menuItem.addActionListener(e ->  colorEvent(Color.MAGENTA));
+		colorMenu.add(menuItem);
+		menuItem = new JMenuItem("Yellow");
+		menuItem.addActionListener(e ->  colorEvent(Color.YELLOW));
+		colorMenu.add(menuItem);
+		menuItem = new JMenuItem("Black");
+		menuItem.addActionListener(e ->  colorEvent(Color.BLACK));
 		colorMenu.add(menuItem);
 	}
 
+	/**
+	 * Ska jag ha med denna? Får se.
+	 * @param frame
+	 */
 	private void messageEvent(MainFrame frame) {
 	
 		String message = (String) JOptionPane.showInputDialog(frame,
@@ -103,23 +119,36 @@ public class Menu extends JMenuBar {
 			JOptionPane.showMessageDialog(frame, message);
 		}
 	}
-	
+
+	/**
+	 * Event for clearing the frame.
+	 * @param frame is the frame.
+	 */
 	private void clearEvent(MainFrame frame) {
 		frame.clearFrame();
 	}
 
-	private void toolEvent(MainFrame frame, String tool) {
+	/**
+	 * Event for when the user changes tool/shape.
+	 * @param tool is the chosen tool.
+	 */
+	private void toolEvent(String tool) {
 		selectedTool = tool; // Update the selected tool.
-		System.out.println(selectedTool);
 	}
 
-	private void thicknessEvent(MainFrame frame, int thickness) {
+	/**
+	 * Event for when the user changes thickness.
+	 * @param thickness is the chosen thickness.
+	 */
+	private void thicknessEvent(int thickness) {
 		selectedThickness = thickness; // Update the selected thickness.
-		System.out.println(selectedThickness);
 	}
 
-	private void colorEvent(MainFrame frame, Color color) {
+	/**
+	 * Event for when the user changes color.
+	 * @param color is the chosen color.
+	 */
+	private void colorEvent(Color color) {
 		selectedColor = color; // Update the selected color.
-		System.out.println(selectedColor);
 	}
 }

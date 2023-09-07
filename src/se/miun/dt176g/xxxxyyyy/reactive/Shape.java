@@ -1,35 +1,42 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
-
 import java.awt.*;
-import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * <h1>Shape</h1> Abstract class which derived classes builds on.
- * <p>
  * This class consists of the attributes common to all geometric shapes.
  * Specific shapes are based on this class.
- * 
- * @author 	--YOUR NAME HERE--
+ * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2022-09-08
+ * @since 	2023-09-07
  */
-
 public abstract class Shape implements Drawable {
 
-	// private member : some container storing coordinates
-    // får fundera på vad det där betyder ^
-
-
-    protected Color color;
-    protected int thickness;
-
-    public Shape(Color color, int thickness) {  // tänker att så här får man göra kanske
-        this.color = color;
-        this.thickness = thickness;
-    }
-
-    public abstract void handleMouseEvent(MouseEvent e);
+    /**
+     * Method for drawing the Shape.
+     * @param g is the graphics.
+     */
     public abstract void draw(Graphics g);
-	
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void addShape(Shape shape) {}
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void removeShape(Shape shape) {}
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<Shape> getShapes() {
+        return new ArrayList<>();
+    }
 }

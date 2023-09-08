@@ -1,8 +1,20 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
+import io.reactivex.rxjava3.disposables.Disposable;
+
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
+/**
+ * <h1>DrawingServer</h1>
+ * 
+ * @author 	Emma Pesjak
+ * @version 1.0
+ * @since 	2023-09-08
+ */
 public class DrawingServer {
 
     // vet inte riktigt vad jag pysslar med här
@@ -15,21 +27,28 @@ public class DrawingServer {
     //onError
     //onComplete
 
-    // ska man ha någon lista med alla klienter?
-
-    // borde servern ligga i app-start?
 
     //Incoming connections (receiving drawing events/objects from others over the network) should be represented as Observables.
     //Outgoing connections (sending drawing events/objects to others over the network) should be represented as Observers.
 
 
-    ServerSocket serverSocket = new ServerSocket(12345);
+    private ServerSocket serverSocket;
 
-    public DrawingServer() throws IOException {
+    // ska man ha någon lista med alla klienter?
+    private List<Client> clients = new ArrayList<>();
+
+
+    public DrawingServer() {
+        try {
+            serverSocket = new ServerSocket(12345); // Annan port?
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public void startServer(){
+    public void startServer() {
         //?? eller i constructorn?
+
     }
 
     // INKOPIERAT från moodles exempel, ska ju inte ligga här.

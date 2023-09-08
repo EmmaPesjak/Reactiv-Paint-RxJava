@@ -1,14 +1,13 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
 import javax.swing.SwingUtilities;
-import java.io.IOException;
 
 /**
 * <h1>AppStart</h1>
 * The start of the application
 * @author  Emma Pesjak
 * @version 1.0
-* @since   2023-09-07
+* @since   2023-09-08
 */
 public class AppStart {
 
@@ -24,12 +23,7 @@ public class AppStart {
 			// Create and start the server in a separate thread.
 			// Tänker att det ska man göra i en egen tråd?? för att inte kludda med Swing??
 			Thread serverThread = new Thread(() -> {
-				DrawingServer drawingServer = null;
-				try {  // behövs denna try/catchen? intelliJ tvingar mig, kolla sen när koden är helt klar
-					drawingServer = new DrawingServer();
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
+				DrawingServer drawingServer = new DrawingServer();
 				drawingServer.startServer();
 			});
 			serverThread.start();

@@ -16,7 +16,7 @@ import javax.swing.*;
  */
 public class DrawingPanel extends JPanel {
 	private final Drawing drawing; // Container for the Shapes.
-	private final Menu menu; // For getting the menu option, I know, ugly solution, would be fancier with interfaces :).
+	private final Menu menu; // For getting the menu options. I know, ugly solution, would be fancier with interfaces :).
 	private Shape currentShape; // Store the current shape being drawn.
 
 	/**
@@ -30,7 +30,8 @@ public class DrawingPanel extends JPanel {
 
 		// Create a subject for mouse events.
 		PublishSubject<MouseEvent> mouseEventSubject = PublishSubject.create();
-		Observable<MouseEvent> mouseEventObservable = mouseEventSubject.share(); // Share the observable.
+		// Share the observable.
+		Observable<MouseEvent> mouseEventObservable = mouseEventSubject.share();
 
 		// Add mouse event listeners to handle user input for drawing.
 		addMouseListener(new MouseAdapter() {
@@ -125,7 +126,7 @@ public class DrawingPanel extends JPanel {
 	 * Clear the drawing.
 	 */
 	public void clearDrawing() {
-		drawing.clear(); // Assuming you have a clear method in your Drawing class
+		drawing.clear();
 		repaint(); // Redraw the panel to reflect the cleared drawing
 	}
 }

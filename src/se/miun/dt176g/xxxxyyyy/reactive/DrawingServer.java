@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * <h1>DrawingServer</h1>
- * 
+ *
  * @author 	Emma Pesjak
  * @version 1.0
  * @since 	2023-09-08
@@ -27,10 +27,22 @@ public class DrawingServer {
     //onError
     //onComplete
 
-
     //Incoming connections (receiving drawing events/objects from others over the network) should be represented as Observables.
     //Outgoing connections (sending drawing events/objects to others over the network) should be represented as Observers.
 
+
+    // Kap 5 learning rxJava om multicasting tar upp mycket bra om hur man ska kunna skicka så alla observers får all info typ samtidigt och i bra ordning.
+    // Kap 6 s189 Using observeOn() for UI event threads
+    // "The visual updating of user interfaces is often done by a single dedicated UI
+    //thread, and changes to the user interface must be done on that thread. User input events are
+    //typically fired on the UI thread as well. If a user input triggers work, and that work is not
+    //moved to another thread, that UI thread becomes busy. This is what makes the user
+    //interface unresponsive, and today's users expect better than this. They want to continue
+    //interacting with the application while work is happening in the background, so
+    //concurrency is a must-have.
+    //Thankfully, RxJava comes to the rescue! You can use observeOn() to move UI events to a
+    //computation or I/O Scheduler to do the work, and when the result is ready, move it back
+    //to the UI thread with another observeOn()."
 
     private ServerSocket serverSocket;
 

@@ -1,9 +1,6 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
+import javax.swing.*;
 import java.awt.*;
 
 /**
@@ -11,10 +8,9 @@ import java.awt.*;
  * Creates the menu in the GUI.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-07
+ * @since 	2023-09-18
  */
 public class Menu extends JMenuBar {
-	private static final long serialVersionUID = 1L;  // Ta bort denna?
 	public Color selectedColor = Color.PINK; // Default color.
 	public int selectedThickness = 2; // Default thickness.
 	public String selectedTool = "Freehand"; // Default tool type.
@@ -41,9 +37,6 @@ public class Menu extends JMenuBar {
 		// General options menu.
 		optionsMenu = new JMenu("Options");
 		this.add(optionsMenu);
-		menuItem = new JMenuItem("Send message"); // behöver jag ha denna?
-		menuItem.addActionListener(e -> messageEvent(frame));
-		optionsMenu.add(menuItem);
 		menuItem = new JMenuItem("Clear canvas");
 		menuItem.addActionListener(e ->  clearEvent(frame));
 		optionsMenu.add(menuItem);
@@ -107,22 +100,8 @@ public class Menu extends JMenuBar {
 	}
 
 	/**
-	 * Ska jag ha med denna? Får se.
-	 * @param frame
-	 */
-	private void messageEvent(MainFrame frame) {
-	
-		String message = (String) JOptionPane.showInputDialog(frame,
-				"Send message to everyone:");
-		
-		if(message != null && !message.isEmpty()) {
-			JOptionPane.showMessageDialog(frame, message);
-		}
-	}
-
-	/**
 	 * Event for clearing the frame.
-	 * @param frame is the frame.
+	 * @param frame is the GUI frame.
 	 */
 	private void clearEvent(MainFrame frame) {
 		frame.clearFrame();

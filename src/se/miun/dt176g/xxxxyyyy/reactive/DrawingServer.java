@@ -20,9 +20,9 @@ import java.util.List;
  * @version 1.0
  * @since 	2023-09-19
  */
-public class DrawingServer {
+public class DrawingServer implements ConnectionHandler {
 
-    private final MainFrame mainFrame;
+    private MainFrame mainFrame;
     private ServerSocket serverSocket;
     private final Drawing drawing = new Drawing();
 
@@ -40,8 +40,7 @@ public class DrawingServer {
     // TODO servern är också en klient typ
 
 
-    public DrawingServer(MainFrame mainFrame) {
-        this.mainFrame = mainFrame;
+    public DrawingServer() {
         try {
             serverSocket = new ServerSocket(Constants.PORT);
 //            while (acceptConnections) {
@@ -58,16 +57,31 @@ public class DrawingServer {
     }
 
     public void startServer() {
-        try {
-            while (acceptConnections) {
-                Socket socket = serverSocket.accept();
-                Observable.<Socket>create(emitter -> emitter.onNext(socket))
-                        .observeOn(Schedulers.io())
-                        .subscribe(connections);
+
+        Thread serverThread = new Thread(() -> {
+            try {
+                while (acceptConnections) {
+                    Socket socket = serverSocket.accept();
+                    Observable.<Socket>create(emitter -> emitter.onNext(socket))  // detta vetekatten för det tog jag från exemplet
+                            .observeOn(Schedulers.io())
+                            .subscribe(connections);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        });
+
+        serverThread.start();
+//        try {
+//            while (acceptConnections) {
+//                Socket socket = serverSocket.accept();
+//                Observable.<Socket>create(emitter -> emitter.onNext(socket))
+//                        .observeOn(Schedulers.io())
+//                        .subscribe(connections);
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 
     private void shutdown() {
@@ -80,11 +94,22 @@ public class DrawingServer {
      */
     public static void main(String[] args) {
 
-        MainFrame frame = new MainFrame(false);
+        DrawingServer server = new DrawingServer(); // Create an instance of DrawingServer.
+
+        SwingUtilities.invokeLater(() -> {
+            MainFrame frame = new MainFrame(server); // Pass the server instance to MainFrame
+            frame.setVisible(true);
+            server.setMainFrame(frame);
+            server.startServer();
+        });
 
         // Make sure GUI is created on the event dispatching thread.
-        SwingUtilities.invokeLater(() -> frame.setVisible(true));
+        //SwingUtilities.invokeLater(() -> frame.setVisible(true));
 
+    }
+
+    public void setMainFrame(MainFrame mainFrame) {
+        this.mainFrame = mainFrame;
     }
 
     // vet inte riktigt vad jag pysslar med här

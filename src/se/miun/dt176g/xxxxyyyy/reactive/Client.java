@@ -1,11 +1,19 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 import se.miun.dt176g.xxxxyyyy.reactive.support.Constants;
 
 import javax.swing.*;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * <h1>Client</h1>
@@ -14,32 +22,38 @@ import java.net.Socket;
  * @version 1.0
  * @since 	2023-09-19
  */
-public class Client {
+public class Client implements ConnectionHandler {
     private Socket socket;
-    private final MainFrame mainFrame;
+    private MainFrame mainFrame;
 
-    public Client(MainFrame mainFrame) {
-        this.mainFrame = mainFrame;
-    }
 
     public static void main(String[] args) {
-
-        MainFrame frame = new MainFrame(true);
-
+        // Create an instance of Client.
+        Client client = new Client();
+        // Create an instance of MainFrame and pass the client instance.
+        MainFrame frame = new MainFrame(client);
+        // Set the client instance for the created client object.
+        client.setMainFrame(frame);
         // Make sure GUI is created on the event dispatching thread.
         SwingUtilities.invokeLater(() -> frame.setVisible(true));
+    }
+
+    public void setMainFrame(MainFrame frame) {
+        this.mainFrame = frame;
     }
 
     public void connectToServer() {
         try {
             socket = new Socket(Constants.ADDRESS, Constants.PORT);
-            mainFrame.setStatusMessage(Constants.CLIENT_CONNECT_MSG);
+
 
             // kirra alla gamla drawings, det kan man ju kanske göra i Observablen nedan
             mainFrame.setUpDrawing(new Drawing()); //TODO fixa så denna inte blir ny.
 
             Observable.just("Alla drawing events");
             //TODO IN MED LOGIK HÄR
+
+
 
         } catch (IOException e) {
             mainFrame.setUpFailedToConnect();

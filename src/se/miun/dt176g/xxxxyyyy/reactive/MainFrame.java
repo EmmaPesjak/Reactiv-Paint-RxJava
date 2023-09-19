@@ -26,7 +26,7 @@ public class MainFrame extends JFrame {
 	/**
 	 * Constructor setting the layout and interface.
 	 */
-	public MainFrame(boolean isClient) {
+	public MainFrame(ConnectionHandler connectionHandler) {
 		this.setSize(1200, 900);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setTitle(Constants.TITLE);
@@ -51,15 +51,14 @@ public class MainFrame extends JFrame {
 		statusLabel = new JLabel();
 		this.add(statusLabel, BorderLayout.SOUTH);
 
-	// TODO jag ska ju inte skapa nya här?? varför gör jag sånt dumt??
-		if (isClient) {
-			client = new Client(this); // Pass the MainFrame instance to the Client
-			setUpConnectButton(); // Set up the Connect button
+		// Set up the differences in the GUI depending on if it is a server or a client.
+		if (connectionHandler instanceof Client) {
+			this.client = (Client) connectionHandler;
+			setUpConnectButton();
 			setStatusMessage(Constants.CLIENT_START_MSG);
-		} else {
-			server = new DrawingServer(this); // Pass the MainFrame instance to the Server
-			//server.startServer();
-			setUpDrawing(server.getDrawing()); // Start the server
+		} else if (connectionHandler instanceof DrawingServer) {
+			this.server = (DrawingServer) connectionHandler;
+			setUpDrawing(server.getDrawing());
 			setStatusMessage(Constants.SERVER);
 		}
 
@@ -67,6 +66,11 @@ public class MainFrame extends JFrame {
 
 	public void setUpDrawing(Drawing drawing) {
 		drawingPanel = new DrawingPanel(drawing, menu);
+		contentPanel.add(drawingPanel, BorderLayout.CENTER);
+	}
+
+	// detta blev mög
+	public void setUpDrawingPanel(DrawingPanel drawing) {
 		contentPanel.add(drawingPanel, BorderLayout.CENTER);
 	}
 
@@ -85,7 +89,7 @@ public class MainFrame extends JFrame {
 		contentPanel.add(connectButton, BorderLayout.SOUTH);
 	}
 
-	private void setUpConnectButton() {
+	public void setUpConnectButton() {
 		connectButton = new JButton(Constants.CONNECT_BTN);
 
 		// Add an ActionListener to the button for handling the connection to the server.

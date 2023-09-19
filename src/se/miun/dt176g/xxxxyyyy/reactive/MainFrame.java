@@ -1,5 +1,7 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
+import se.miun.dt176g.xxxxyyyy.reactive.support.Constants;
+
 import java.awt.*;
 import javax.swing.*;
 
@@ -8,7 +10,7 @@ import javax.swing.*;
  * JFrame for the applications GUI.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-18
+ * @since 	2023-09-19
  */
 @SuppressWarnings("serial")
 public class MainFrame extends JFrame {
@@ -27,7 +29,7 @@ public class MainFrame extends JFrame {
 	public MainFrame(boolean isClient) {
 		this.setSize(1200, 900);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		this.setTitle("Reactive Paint");
+		this.setTitle(Constants.TITLE);
 		this.setLayout(new BorderLayout());
 
 		// Create the menu and add it to the top of the frame.
@@ -46,18 +48,19 @@ public class MainFrame extends JFrame {
 		this.add(contentPanel, BorderLayout.CENTER);
 
 		// Create the server status label and add it to the bottom of the frame.
-		statusLabel = new JLabel("Status: borde aldrig synas");
+		statusLabel = new JLabel();
 		this.add(statusLabel, BorderLayout.SOUTH);
 
-
+	// TODO jag ska ju inte skapa nya här?? varför gör jag sånt dumt??
 		if (isClient) {
 			client = new Client(this); // Pass the MainFrame instance to the Client
 			setUpConnectButton(); // Set up the Connect button
-			setStatusMessage("You are a client");
+			setStatusMessage(Constants.CLIENT_START_MSG);
 		} else {
 			server = new DrawingServer(this); // Pass the MainFrame instance to the Server
+			//server.startServer();
 			setUpDrawing(server.getDrawing()); // Start the server
-			setStatusMessage("You are running the server");
+			setStatusMessage(Constants.SERVER);
 		}
 
 	}
@@ -69,37 +72,34 @@ public class MainFrame extends JFrame {
 
 	public void setUpFailedToConnect() {
 		JPanel panel = new JPanel();
-		JLabel failText = new JLabel("Failed to connect to a server, make sure one is running.");
+
+		JLabel failText = new JLabel(Constants.FAIL_CONNECT_MSG);
 		failText.setFont(new Font("Arial", Font.PLAIN, 24));
 		panel.add(failText);
 		contentPanel.add(panel, BorderLayout.CENTER);
 
 		//TODO kopierat från setUpConnectButton() men med borderlayout south, gör en snyggare lösning
-		connectButton = new JButton("Connect to server");
-
+		connectButton = new JButton(Constants.CONNECT_BTN);
 		// Add an ActionListener to the button for handling the connection to the server.
 		connectButton.addActionListener(e -> connectToServerAndGetDrawing());
-
 		contentPanel.add(connectButton, BorderLayout.SOUTH);
 	}
 
-	public void setUpConnectButton() {
-		connectButton = new JButton("Connect to server");
+	private void setUpConnectButton() {
+		connectButton = new JButton(Constants.CONNECT_BTN);
 
 		// Add an ActionListener to the button for handling the connection to the server.
-		connectButton.addActionListener(e -> connectToServerAndGetDrawing());
+		connectButton.addActionListener(e -> {
+			SwingUtilities.invokeLater(this::connectToServerAndGetDrawing);  //Make sure it's executed on the EDT.
+		});
 
 		contentPanel.add(connectButton, BorderLayout.CENTER);
 	}
 
-	public void connectToServerAndGetDrawing() {
-		System.out.println("connecting");
-
+	private void connectToServerAndGetDrawing() {
 		// Remove the button and possible error text from the content panel.
 		contentPanel.removeAll();
 
-		// TODO här ska det connecta och så få drawingen på någon vänster så man kan
-		//setUpDrawing(drawing);
 		client.connectToServer();
 
 		// Repaint the content panel to reflect the changes
@@ -112,7 +112,7 @@ public class MainFrame extends JFrame {
 	 * @param message is the message to be displayed.
 	 */
 	public void setStatusMessage(String message) {
-		statusLabel.setText("Status: " + message);
+		statusLabel.setText(Constants.STATUS_MSG + message);
 	}
 
 	/**

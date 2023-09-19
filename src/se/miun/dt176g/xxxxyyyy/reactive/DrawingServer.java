@@ -1,26 +1,24 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
-import com.sun.tools.javac.Main;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.reactivex.rxjava3.subjects.Subject;
+import se.miun.dt176g.xxxxyyyy.reactive.support.Constants;
 
 import javax.swing.*;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * <h1>DrawingServer</h1>
- *
+ * //Incoming connections (receiving drawing events/objects from others over the network) should be represented as Observables.
+ *     //Outgoing connections (sending drawing events/objects to others over the network) should be represented as Observers.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-18
+ * @since 	2023-09-19
  */
 public class DrawingServer {
 
@@ -28,14 +26,52 @@ public class DrawingServer {
     private ServerSocket serverSocket;
     private final Drawing drawing = new Drawing();
 
+    private Subject<Socket> connections;
+
+    private Subject<Shape> shapeStream;   //all shapes from all clients fast detta ska in i min drawing?
+    // drawingen ska delas på någon vänster?
+
+    // ska man ha någon lista med alla klienter?
+    private List<Client> clients = new ArrayList<>();
+
+    private boolean acceptConnections = true;
+
+
+    // TODO servern är också en klient typ
+
+
     public DrawingServer(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
         try {
-            serverSocket = new ServerSocket(12345); // Annan port?
+            serverSocket = new ServerSocket(Constants.PORT);
+//            while (acceptConnections) {
+//                Socket socket = serverSocket.accept();
+//                Observable.<Socket>create(emitter -> emitter.onNext(socket))
+//                        .observeOn(Schedulers.io())
+//                        .subscribe(connections);
+//            }
 
+        } catch (IOException e) {
+            mainFrame.setStatusMessage(Constants.FAIL_HOST_MSG);
+            e.printStackTrace();
+        }
+    }
+
+    public void startServer() {
+        try {
+            while (acceptConnections) {
+                Socket socket = serverSocket.accept();
+                Observable.<Socket>create(emitter -> emitter.onNext(socket))
+                        .observeOn(Schedulers.io())
+                        .subscribe(connections);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void shutdown() {
+        acceptConnections = false;
     }
 
     /**
@@ -61,9 +97,6 @@ public class DrawingServer {
     //onError
     //onComplete
 
-    //Incoming connections (receiving drawing events/objects from others over the network) should be represented as Observables.
-    //Outgoing connections (sending drawing events/objects to others over the network) should be represented as Observers.
-
 
     // Kap 5 learning rxJava om multicasting tar upp mycket bra om hur man ska kunna skicka så alla observers får all info typ samtidigt och i bra ordning.
     // Kap 6 s189 Using observeOn() for UI event threads
@@ -82,28 +115,5 @@ public class DrawingServer {
 
     public Drawing getDrawing() {
         return drawing;
-    }
-
-
-
-    // ska man ha någon lista med alla klienter?
-    //private List<Client> clients = new ArrayList<>();
-
-    //private List<ClientHandler> clients = new ArrayList<>();
-
-
-//    public DrawingServer() {
-//        try {
-//            serverSocket = new ServerSocket(12345); // Annan port?
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
-
-
-    public void startServer() {
-        //?? eller i constructorn?
-
     }
 }

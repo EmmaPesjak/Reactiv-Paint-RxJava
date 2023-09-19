@@ -56,38 +56,6 @@ public class DrawingPanel extends JPanel {
 		// Subscribe to the mouse event observable to handle drawing.
 		mouseEventObservable.subscribe(this::handleMouseEvent);
 
-
-		// TODO LÄSTE I BOKEN ATT MAN SKA UNDVIKA SUBJEKT SÅ NEDANSTÅENDE PROVISORISKA KOD FUNGERAR MEN NU VET JAG INTE
-		// TODO OM REQUIREMENT 2 ÄR OK, FÅR NOG JOBBA PÅ DET.
-
-//		this.drawing = drawing;
-//		this.menu = menu;
-//
-//		// Create an observable directly from mousePressed, mouseReleased, and mouseDragged events.
-//		Observable<MouseEvent> mouseEventObservable = Observable.create(emitter -> {
-//			addMouseListener(new MouseAdapter() {
-//				@Override
-//				public void mousePressed(MouseEvent e) {
-//					emitter.onNext(e); // Emit mouse press event.
-//				}
-//
-//				@Override
-//				public void mouseReleased(MouseEvent e) {
-//					emitter.onNext(e); // Emit mouse release event.
-//				}
-//			});
-//
-//			addMouseMotionListener(new MouseAdapter() {
-//				@Override
-//				public void mouseDragged(MouseEvent e) {
-//					emitter.onNext(e); // Emit mouse drag event.
-//				}
-//			});
-//		});
-//
-//		// Subscribe to the mouse event observable to handle drawing.
-//		mouseEventObservable.subscribe(this::handleMouseEvent);
-
 	}
 
 	/**

@@ -16,8 +16,11 @@ import javax.swing.*;
  */
 public class DrawingPanel extends JPanel {
 	private final Drawing drawing; // Container for the Shapes.
-	private final Menu menu; // For getting the menu options. I know, ugly solution, would be fancier with interfaces :).
 	private Shape currentShape; // Store the current shape being drawn.
+
+	public Color selectedColor = Color.PINK; // Default color.
+	public int selectedThickness = 2; // Default thickness.
+	public String selectedShape = "Freehand"; // Default shape type.
 
 	/**
 	 * Constructor which creates the mouse event listeners.
@@ -26,7 +29,6 @@ public class DrawingPanel extends JPanel {
 	 */
 	public DrawingPanel(Drawing drawing, Menu menu) {
 		this.drawing = drawing;
-		this.menu = menu;
 
 		// Create a subject for mouse events.
 		PublishSubject<MouseEvent> mouseEventSubject = PublishSubject.create();
@@ -53,9 +55,44 @@ public class DrawingPanel extends JPanel {
 				mouseEventSubject.onNext(e); // Emit mouse drag event.
 			}
 		});
+
+		// Subscribe to the menu Observables to react to changes in menu options.
+		menu.shapeObservable()
+				.subscribe(this::handleShapeChange);
+		menu.thicknessObservable()
+				.subscribe(this::handleThicknessChange);
+		menu.colorObservable()
+				.subscribe(this::handleColorChange);
+		menu.clearDrawingObservable()
+				.subscribe(clear -> clearDrawing());
+
 		// Subscribe to the mouse event observable to handle drawing.
 		mouseEventObservable.subscribe(this::handleMouseEvent);
+	}
 
+
+	/**
+	 * Handles shape change events by updating the selected shape.
+	 * @param shape is the new selected shape.
+	 */
+	private void handleShapeChange(String shape) {
+		selectedShape = shape;
+	}
+
+	/**
+	 * Handles thickness change events by updating the selected thickness.
+	 * @param thickness is the new selected thickness.
+	 */
+	private void handleThicknessChange(int thickness) {
+		selectedThickness = thickness;
+	}
+
+	/**
+	 * Handles color change events by updating the selected color.
+	 * @param color is the new selected color.
+	 */
+	private void handleColorChange(Color color) {
+		selectedColor = color;
 	}
 
 	/**
@@ -65,11 +102,11 @@ public class DrawingPanel extends JPanel {
 	private void handleMouseEvent(MouseEvent e) {	//TODO kolla upp thread safety.
 		int x = e.getX();
 		int y = e.getY();
-		String selectedShapeType = menu.selectedTool;
+		String selectedShapeType = selectedShape;
 		switch (selectedShapeType) {
 			case "Rectangle":
 				if (e.getID() == MouseEvent.MOUSE_PRESSED) {
-					currentShape = new RectangleShape(menu.selectedColor, menu.selectedThickness);
+					currentShape = new RectangleShape(selectedColor, selectedThickness);
 					((RectangleShape) currentShape).setStartPoint(new Point(x, y));
 					((RectangleShape) currentShape).setEndPoint(new Point(x, y));
 					drawing.addShape(currentShape);
@@ -79,7 +116,7 @@ public class DrawingPanel extends JPanel {
 				break;
 			case "Oval":
 				if (e.getID() == MouseEvent.MOUSE_PRESSED) {
-					currentShape = new OvalShape(menu.selectedColor, menu.selectedThickness);
+					currentShape = new OvalShape(selectedColor, selectedThickness);
 					((OvalShape) currentShape).setStartPoint(new Point(x, y));
 					((OvalShape) currentShape).setEndPoint(new Point(x, y));
 					drawing.addShape(currentShape);
@@ -89,7 +126,7 @@ public class DrawingPanel extends JPanel {
 				break;
 			case "Line":
 				if (e.getID() == MouseEvent.MOUSE_PRESSED) {
-					currentShape = new LineShape(menu.selectedColor, menu.selectedThickness);
+					currentShape = new LineShape(selectedColor, selectedThickness);
 					((LineShape) currentShape).setStartPoint(new Point(x, y));
 					((LineShape) currentShape).setEndPoint(new Point(x, y));
 					drawing.addShape(currentShape);
@@ -99,7 +136,7 @@ public class DrawingPanel extends JPanel {
 				break;
 			case "Freehand":
 				if (e.getID() == MouseEvent.MOUSE_PRESSED) {
-					currentShape = new FreehandShape(menu.selectedColor, menu.selectedThickness);
+					currentShape = new FreehandShape(selectedColor, selectedThickness);
 					((FreehandShape) currentShape).addPoint(x, y);
 					drawing.addShape(currentShape);
 				} else if (e.getID() == MouseEvent.MOUSE_DRAGGED && currentShape instanceof FreehandShape) {

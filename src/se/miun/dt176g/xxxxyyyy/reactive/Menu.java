@@ -1,5 +1,8 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.PublishSubject;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -11,25 +14,24 @@ import java.awt.*;
  * @since 	2023-09-18
  */
 public class Menu extends JMenuBar {
-	public Color selectedColor = Color.PINK; // Default color.
-	public int selectedThickness = 2; // Default thickness.
-	public String selectedTool = "Freehand"; // Default tool type.
+	private final PublishSubject<Boolean> clearDrawingSubject = PublishSubject.create();
+	private final PublishSubject<String> shapeSubject = PublishSubject.create();
+	private final PublishSubject<Integer> thicknessSubject = PublishSubject.create();
+	private final PublishSubject<Color> colorSubject = PublishSubject.create();
 
 	/**
-	 * Constructor for the options' menu, sets the frame.
-	 * @param frame is the Swing frame.
+	 * Constructor for the options' menu, initializes the menu.
 	 */
-	public Menu(MainFrame frame) {
-		init(frame);
+	public Menu() {
+		init();
 	}
 
 	/**
 	 * Method which initializes the user's options menu, sets appropriate action listeners on the menu items.
-	 * @param frame is the Swing frame.
 	 */
-	private void init(MainFrame frame) {
+	private void init() {
 		JMenu optionsMenu;
-		JMenu toolMenu;
+		JMenu shapeMenu;
 		JMenu thicknessMenu;
 		JMenu colorMenu;
 		JMenuItem menuItem;
@@ -38,24 +40,24 @@ public class Menu extends JMenuBar {
 		optionsMenu = new JMenu("Options");
 		this.add(optionsMenu);
 		menuItem = new JMenuItem("Clear canvas");
-		menuItem.addActionListener(e ->  clearEvent(frame));
+		menuItem.addActionListener(e ->  clearEvent());
 		optionsMenu.add(menuItem);
 
 		// Tools/shapes menu.
-		toolMenu = new JMenu("Tools/Shapes");
-		this.add(toolMenu);
+		shapeMenu = new JMenu("Tools/Shapes");
+		this.add(shapeMenu);
 		menuItem = new JMenuItem("Rectangle");
-		menuItem.addActionListener(e -> toolEvent("Rectangle"));
-		toolMenu.add(menuItem);
+		menuItem.addActionListener(e -> shapeEvent("Rectangle"));
+		shapeMenu.add(menuItem);
 		menuItem = new JMenuItem("Oval");
-		menuItem.addActionListener(e -> toolEvent("Oval"));
-		toolMenu.add(menuItem);
+		menuItem.addActionListener(e -> shapeEvent("Oval"));
+		shapeMenu.add(menuItem);
 		menuItem = new JMenuItem("Line");
-		menuItem.addActionListener(e -> toolEvent("Line"));
-		toolMenu.add(menuItem);
+		menuItem.addActionListener(e -> shapeEvent("Line"));
+		shapeMenu.add(menuItem);
 		menuItem = new JMenuItem("Freehand");
-		menuItem.addActionListener(e -> toolEvent("Freehand"));
-		toolMenu.add(menuItem);
+		menuItem.addActionListener(e -> shapeEvent("Freehand"));
+		shapeMenu.add(menuItem);
 
 		// Thickness menu.
 		thicknessMenu = new JMenu("Thickness");
@@ -99,35 +101,67 @@ public class Menu extends JMenuBar {
 		colorMenu.add(menuItem);
 	}
 
+
 	/**
-	 * Event for clearing the frame.
-	 * @param frame is the GUI frame.
+	 * Creates and returns an Observable for clearing the drawing.
+	 * @return an Observable<Boolean> for clearing the drawing.
 	 */
-	private void clearEvent(MainFrame frame) {
-		frame.clearFrame();
+	public Observable<Boolean> clearDrawingObservable() {
+		return clearDrawingSubject;
 	}
 
 	/**
-	 * Event for when the user changes tool/shape.
-	 * @param tool is the chosen tool.
+	 * Creates and returns an Observable for shape selection.
+	 * @return an Observable<String> for shape selection.
 	 */
-	private void toolEvent(String tool) {
-		selectedTool = tool; // Update the selected tool.
+	public Observable<String> shapeObservable() {
+		return shapeSubject;
 	}
 
 	/**
-	 * Event for when the user changes thickness.
-	 * @param thickness is the chosen thickness.
+	 * Creates and returns an Observable for thickness selection.
+	 * @return an Observable<Integer> for thickness selection.
+	 */
+	public Observable<Integer> thicknessObservable() {
+		return thicknessSubject;
+	}
+
+	/**
+	 * Creates and returns an Observable for color selection.
+	 * @return an Observable<Color> for color selection.
+	 */
+	public Observable<Color> colorObservable() {
+		return colorSubject;
+	}
+
+	/**
+	 * Emits an event to indicate the drawing should be cleared.
+	 */
+	private void clearEvent() {
+		clearDrawingSubject.onNext(true);
+	}
+
+	/**
+	 * Emits an event to indicate a change in the selected shape.
+	 * @param shape is the selected shape.
+	 */
+	private void shapeEvent(String shape) {
+		shapeSubject.onNext(shape);
+	}
+
+	/**
+	 * Emits an event to indicate a change in the selected thickness.
+	 * @param thickness is the selected thickness.
 	 */
 	private void thicknessEvent(int thickness) {
-		selectedThickness = thickness; // Update the selected thickness.
+		thicknessSubject.onNext(thickness);
 	}
 
 	/**
-	 * Event for when the user changes color.
-	 * @param color is the chosen color.
+	 * Emits an event to indicate a change in the selected color.
+	 * @param color is the selected color.
 	 */
 	private void colorEvent(Color color) {
-		selectedColor = color; // Update the selected color.
+		colorSubject.onNext(color);
 	}
 }

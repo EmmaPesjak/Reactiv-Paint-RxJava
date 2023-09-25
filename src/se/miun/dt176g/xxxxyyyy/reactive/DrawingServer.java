@@ -71,6 +71,8 @@ public class DrawingServer implements ConnectionHandler {
             }
         });
 
+        //TODO här får jag massa fel
+
         serverThread.start();
 //        try {
 //            while (acceptConnections) {

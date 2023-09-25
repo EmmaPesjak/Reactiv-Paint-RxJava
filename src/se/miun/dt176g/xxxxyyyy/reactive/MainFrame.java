@@ -33,7 +33,7 @@ public class MainFrame extends JFrame {
 		this.setLayout(new BorderLayout());
 
 		// Create the menu and add it to the top of the frame.
-		menu = new Menu(this);
+		menu = new Menu();
 		this.add(menu, BorderLayout.NORTH);
 
 		// Create all necessary objects and adds them to the content panel.

@@ -11,7 +11,7 @@ import java.awt.*;
  * Creates the menu in the GUI.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-18
+ * @since 	2023-09-25
  */
 public class Menu extends JMenuBar {
 	private final PublishSubject<Boolean> clearDrawingSubject = PublishSubject.create();

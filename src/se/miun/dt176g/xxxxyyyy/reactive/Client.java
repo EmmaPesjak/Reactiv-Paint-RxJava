@@ -20,12 +20,18 @@ import java.util.concurrent.CountDownLatch;
  * //Incoming connections(receiving drawing events/objects from others over the network)should be represented as Observables.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-19
+ * @since 	2023-09-25
  */
 public class Client implements ConnectionHandler {
     private Socket socket;
     private MainFrame mainFrame;
+    private DrawingServer server;
 
+    private PublishSubject<Shape> drawingUpdates = PublishSubject.create();
+
+    public void drawShape(Shape shape) {
+        drawingUpdates.onNext(shape);
+    }
 
     public static void main(String[] args) {
         // Create an instance of Client.
@@ -36,6 +42,11 @@ public class Client implements ConnectionHandler {
         client.setMainFrame(frame);
         // Make sure GUI is created on the event dispatching thread.
         SwingUtilities.invokeLater(() -> frame.setVisible(true));
+    }
+
+    public void sendDrawingUpdate(Shape shape) {
+        // Send the drawing update to the server.
+        server.receiveDrawingUpdate(this, shape);
     }
 
     public void setMainFrame(MainFrame frame) {
@@ -49,6 +60,9 @@ public class Client implements ConnectionHandler {
 
             // kirra alla gamla drawings, det kan man ju kanske göra i Observablen nedan
             mainFrame.setUpDrawing(new Drawing()); //TODO fixa så denna inte blir ny.
+
+            mainFrame.setStatusMessage(Constants.CLIENT_CONNECT_MSG);
+
 
             Observable.just("Alla drawing events");
             //TODO IN MED LOGIK HÄR

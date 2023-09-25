@@ -2,6 +2,7 @@ package se.miun.dt176g.xxxxyyyy.reactive;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import se.miun.dt176g.xxxxyyyy.reactive.support.Constants;
 
@@ -18,26 +19,61 @@ import java.util.List;
  *     //Outgoing connections (sending drawing events/objects to others over the network) should be represented as Observers.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-19
+ * @since 	2023-09-25
  */
 public class DrawingServer implements ConnectionHandler {
 
+    private List<Client> clients = new ArrayList<>();
+    private Drawing drawing = new Drawing();
+
+    public void addClient(Client client) {
+        clients.add(client);
+    }
+
+    public void receiveDrawingUpdate(Client sender, Shape shape) {
+        // Handle the drawing update received from a specific client (sender).
+        // You can add logic here to validate and process the update.
+
+        // For example, you might want to ensure that the sender is authorized
+        // to make changes to the drawing, and then add the shape to the drawing.
+
+        // For simplicity, we assume all received shapes are valid and directly add them.
+        drawing.addShape(shape);
+
+        // Broadcast the drawing update to all clients, including the sender.
+        broadcastDrawingUpdate(shape);
+    }
+
+    public void broadcastDrawingUpdate(Shape shape) {
+        // Iterate through connected clients and send the drawing update to each client.
+        for (Client client : clients) {
+            client.sendDrawingUpdate(shape);
+        }
+    }
+
     private MainFrame mainFrame;
     private ServerSocket serverSocket;
-    private final Drawing drawing = new Drawing();
+    //private final Drawing drawing = new Drawing();
 
-    private Subject<Socket> connections;
+    private PublishSubject<Shape> drawingUpdates = PublishSubject.create();
+
+    private Subject<Socket> connections = PublishSubject.create(); // Initialize the connections Subject
+
 
     private Subject<Shape> shapeStream;   //all shapes from all clients fast detta ska in i min drawing?
     // drawingen ska delas på någon vänster?
 
     // ska man ha någon lista med alla klienter?
-    private List<Client> clients = new ArrayList<>();
+    //private List<Client> clients = new ArrayList<>();
 
     private boolean acceptConnections = true;
 
 
     // TODO servern är också en klient typ
+
+    public void drawShape(Shape shape) {
+        drawingUpdates.onNext(shape);
+    }
 
 
     public DrawingServer() {
@@ -74,16 +110,23 @@ public class DrawingServer implements ConnectionHandler {
         //TODO här får jag massa fel
 
         serverThread.start();
-//        try {
-//            while (acceptConnections) {
-//                Socket socket = serverSocket.accept();
-//                Observable.<Socket>create(emitter -> emitter.onNext(socket))
-//                        .observeOn(Schedulers.io())
-//                        .subscribe(connections);
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+
+
+        // Subscribe to incoming connections
+        connections.subscribe(
+                socket -> {
+                    // Handle the incoming socket connection here
+                    // For example, you can create a new Client instance for each connection
+                    // and manage them in your `clients` list.
+                    //Client newClient = new Client(socket);
+                    //clients.add(newClient);
+                    // You can also emit events or data to other Observables or Subjects
+                },
+                error -> {
+                    // Handle any errors that occur while accepting connections
+                    error.printStackTrace();
+                }
+        );
     }
 
     private void shutdown() {

@@ -12,18 +12,17 @@ import javax.swing.*;
  * Creates a Canvas-object for displaying all graphics drawn.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-07
+ * @since 	2023-09-25
  */
 public class DrawingPanel extends JPanel {
 	private final Drawing drawing; // Container for the Shapes.
 	private Shape currentShape; // Store the current shape being drawn.
-
 	public Color selectedColor = Color.PINK; // Default color.
 	public int selectedThickness = 2; // Default thickness.
 	public String selectedShape = "Freehand"; // Default shape type.
 
 	/**
-	 * Constructor which creates the mouse event listeners.
+	 * Constructor which creates the mouse event listeners and subscribes to the menu observables.
 	 * @param drawing is the container of drawn shapes.
 	 * @param menu is the menu which contains the user's options.
 	 */

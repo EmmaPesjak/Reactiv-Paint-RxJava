@@ -6,23 +6,22 @@ import java.awt.*;
 import javax.swing.*;
 
 /**
- * <h1>MainFrame</h1> 
+ * <h1>MainFrame</h1>
  * JFrame for the applications GUI.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-19
+ * @since 	2023-09-25
  */
 @SuppressWarnings("serial")
 public class MainFrame extends JFrame {
 	private DrawingPanel drawingPanel;
 	private final JLabel statusLabel;  // Label for the status message
-	//private Drawing drawing;
 	private final Menu menu;
 	private final JPanel contentPanel = new JPanel();
 	private JButton connectButton;
 	private Client client;
 	private DrawingServer server;
-//
+
 	/**
 	 * Constructor setting the layout and interface.
 	 */
@@ -31,67 +30,65 @@ public class MainFrame extends JFrame {
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setTitle(Constants.TITLE);
 		this.setLayout(new BorderLayout());
-
 		// Create the menu and add it to the top of the frame.
 		menu = new Menu();
 		this.add(menu, BorderLayout.NORTH);
-
 		// Create all necessary objects and adds them to the content panel.
-
 		contentPanel.setLayout(new BorderLayout());
-
-//		Drawing drawing = new Drawing(); // TODO detta gör ju att det blir olika drawings
-//		drawingPanel = new DrawingPanel(drawing, menu);
-//		contentPanel.add(drawingPanel, BorderLayout.CENTER);
-
-		// Add the content panel to the center of the frame.
 		this.add(contentPanel, BorderLayout.CENTER);
-
-		// Create the server status label and add it to the bottom of the frame.
+		// Create the status label and add it to the bottom of the frame.
 		statusLabel = new JLabel();
 		this.add(statusLabel, BorderLayout.SOUTH);
 
-		// Set up the differences in the GUI depending on if it is a server or a client.
-		if (connectionHandler instanceof Client) {
-			this.client = (Client) connectionHandler;
-			setUpConnectButton();
-			setStatusMessage(Constants.CLIENT_START_MSG);
-		} else if (connectionHandler instanceof DrawingServer) {
-			this.server = (DrawingServer) connectionHandler;
-			setUpDrawing(server.getDrawing());
-			setStatusMessage(Constants.SERVER);
-		}
-
+		initializeUI(connectionHandler);
 	}
 
+	/**
+	 * Initializes the user interface based on the given type (client/server).
+	 * @param connectionHandler is the connection handler to initialize the UI for.
+	 */
+	private void initializeUI(ConnectionHandler connectionHandler) {
+		if (connectionHandler instanceof Client) {
+			initializeClientUI((Client) connectionHandler);
+		} else if (connectionHandler instanceof DrawingServer) {
+			initializeServerUI((DrawingServer) connectionHandler);
+		}
+	}
+
+	/**
+	 * Initializes the client user interface.
+	 * @param client is the client instance for which to set up the UI.
+	 */
+	private void initializeClientUI(Client client) {
+		this.client = client;
+		setUpConnectButton();
+		setStatusMessage(Constants.CLIENT_START_MSG);
+	}
+
+	/**
+	 * Initializes the server user interface.
+	 * @param server is the server instance for which to set up the UI.
+	 */
+	private void initializeServerUI(DrawingServer server) {
+		this.server = server;
+		setUpDrawing(server.getDrawing());
+		setStatusMessage(Constants.SERVER);
+	}
+
+	/**
+	 * Sets up the drawing panel within the user interface.
+	 * @param drawing is the drawing canvas/container to display in the panel.
+	 */
 	public void setUpDrawing(Drawing drawing) {
 		drawingPanel = new DrawingPanel(drawing, menu);
 		contentPanel.add(drawingPanel, BorderLayout.CENTER);
 	}
 
-	// detta blev mög
-	public void setUpDrawingPanel(DrawingPanel drawing) {
-		contentPanel.add(drawingPanel, BorderLayout.CENTER);
-	}
-
-	public void setUpFailedToConnect() {
-		JPanel panel = new JPanel();
-
-		JLabel failText = new JLabel(Constants.FAIL_CONNECT_MSG);
-		failText.setFont(new Font("Arial", Font.PLAIN, 24));
-		panel.add(failText);
-		contentPanel.add(panel, BorderLayout.CENTER);
-
-		//TODO kopierat från setUpConnectButton() men med borderlayout south, gör en snyggare lösning
-		connectButton = new JButton(Constants.CONNECT_BTN);
-		// Add an ActionListener to the button for handling the connection to the server.
-		connectButton.addActionListener(e -> connectToServerAndGetDrawing());
-		contentPanel.add(connectButton, BorderLayout.SOUTH);
-	}
-
+	/**
+	 * Sets up the connect button within the user interface.
+	 */
 	public void setUpConnectButton() {
 		connectButton = new JButton(Constants.CONNECT_BTN);
-
 		// Add an ActionListener to the button for handling the connection to the server.
 		connectButton.addActionListener(e -> {
 			SwingUtilities.invokeLater(this::connectToServerAndGetDrawing);  //Make sure it's executed on the EDT.
@@ -100,13 +97,15 @@ public class MainFrame extends JFrame {
 		contentPanel.add(connectButton, BorderLayout.CENTER);
 	}
 
+	/**
+	 * Initiates the process of connecting to the server and obtaining the drawing.
+	 * Removes the connect button and any possible error text from the content panel.
+	 */
 	private void connectToServerAndGetDrawing() {
 		// Remove the button and possible error text from the content panel.
 		contentPanel.removeAll();
 
 		client.connectToServer();
-
-		// Repaint the content panel to reflect the changes
 		contentPanel.revalidate();
 		contentPanel.repaint();
 	}
@@ -120,9 +119,21 @@ public class MainFrame extends JFrame {
 	}
 
 	/**
-	 * Clears the frame by removing the shapes drawn.
+	 * Sets up the user interface to display a "Failed to Connect" message.
+	 * This method is typically called when a connection attempt fails.
 	 */
-	public void clearFrame() {
-		drawingPanel.clearDrawing();
+	public void setUpFailedToConnect() {
+		JPanel panel = new JPanel();
+
+		JLabel failText = new JLabel(Constants.FAIL_CONNECT_MSG);
+		failText.setFont(new Font("Arial", Font.PLAIN, 24));
+		panel.add(failText);
+		contentPanel.add(panel, BorderLayout.CENTER);
+
+		//TODO kopierat från setUpConnectButton() men med borderlayout south, gör en snyggare lösning
+		connectButton = new JButton(Constants.CONNECT_BTN);
+		// Add an ActionListener to the button for handling the connection to the server.
+		connectButton.addActionListener(e -> connectToServerAndGetDrawing());
+		contentPanel.add(connectButton, BorderLayout.SOUTH);
 	}
 }

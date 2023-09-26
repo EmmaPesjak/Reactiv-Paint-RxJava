@@ -3,18 +3,13 @@ package se.miun.dt176g.xxxxyyyy.reactive;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.ObservableEmitter;
 import io.reactivex.rxjava3.core.Observer;
-import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import se.miun.dt176g.xxxxyyyy.reactive.support.Constants;
 
 import javax.swing.*;
-import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.io.*;
 import java.net.Socket;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * <h1>Client</h1>
@@ -27,30 +22,19 @@ public class Client implements ConnectionHandler, Serializable {
     private Socket socket;
     private MainFrame mainFrame;
     private ObjectOutputStream outputStream;
-
+    private static final Menu menu = new Menu();
     private ObjectInputStream inputStream;
-    private PublishSubject<Shape> drawingUpdates = PublishSubject.create();
+    private final PublishSubject<Shape> drawingUpdates = PublishSubject.create();
+    private final PublishSubject<Shape> serverDrawingUpdates = PublishSubject.create();  // vilken använder jag?
     private DrawingPanel drawingPanel;
-
-    // Define a PublishSubject to receive drawing updates from the server
-    private PublishSubject<Shape> serverDrawingUpdates = PublishSubject.create();
-
-
-
-    static Menu menu = new Menu();
-
     private static final long serialVersionUID = 1L; // Change this value when the class structure changes
 
-//    public void drawShape(Shape shape) {
-//        drawingUpdates.onNext(shape);
-//    }
-
     public static void main(String[] args) {
-
-
-
         // Create an instance of Client.
         Client client = new Client();
+
+        client.subscribeToServerDrawingUpdates();  //???
+
         // Create an instance of MainFrame and pass the client instance.
         MainFrame frame = new MainFrame(client, menu);
         // Set the client instance for the created client object.
@@ -59,24 +43,44 @@ public class Client implements ConnectionHandler, Serializable {
         SwingUtilities.invokeLater(() -> frame.setVisible(true));
     }
 
+    public void setMainFrame(MainFrame frame) {
+        this.mainFrame = frame;
+    }
+
+    // HÄR FÅR JAG FAN IN SHAPEN NÄR DEN RITAS!!
+    // method to handle new shapes received from DrawingPanel
+    public void sendShapeToServer(Shape shape) {
+        try {
+            outputStream.writeObject(shape);
+            System.out.println("Sent shape to the server: " + shape);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+    // TODO skit jag inte vet vad jag vill ha till
+
+
     // Create an Observable to represent receiving drawing events from the server
     public Observable<Shape> receiveDrawingEvents() {
         return serverDrawingUpdates;
     }
+//
+//    // Create an Observer to represent sending drawing events to the server
+//    public Observer<Shape> sendDrawingEvents() {
+//        return drawingUpdates;
+//    }
 
-    // Create an Observer to represent sending drawing events to the server
-    public Observer<Shape> sendDrawingEvents() {
-        return drawingUpdates;
-    }
 
-    public void sendDrawingUpdate(Shape shape) {
-        try {
-            // Send the drawing update to the server
-            outputStream.writeObject(shape);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     public void handleDrawingUpdate(Shape shape) {
         // Handle the received drawing update draw it on the client's canvas
@@ -84,21 +88,22 @@ public class Client implements ConnectionHandler, Serializable {
 
         System.out.println("händer detta??");
 
+
         //drawingPanel.addShape(shape);?????????
     }
 
 
-//    private void subscribeToServerDrawingUpdates() {
-//        serverDrawingUpdates.observeOn(Schedulers.io())
-//                .subscribe(shape -> {
-//                    // Handle the received drawing update (e.g., draw it on the client's canvas)
-//                    // You can update the GUI or perform any other actions here.
-//                    handleDrawingUpdate(shape);
-//                });
-//    }
-    public void setMainFrame(MainFrame frame) {
-        this.mainFrame = frame;
+    private void subscribeToServerDrawingUpdates() {
+        serverDrawingUpdates.observeOn(Schedulers.io())
+                .subscribe(shape -> {
+                    // Handle the received drawing update (e.g., draw it on the client's canvas)
+                    // You can update the GUI or perform any other actions here.
+                    handleDrawingUpdate(shape);
+                    System.out.println("Received shape from server: " + shape);
+                    System.out.println("heeeeeej");
+                });
     }
+
 
     public void connectToServer() {
         try {
@@ -116,7 +121,7 @@ public class Client implements ConnectionHandler, Serializable {
             outputStream = new ObjectOutputStream(socket.getOutputStream());
             inputStream = new ObjectInputStream(socket.getInputStream());
 
-            System.out.println("tjena");
+            //subscribeToServerDrawingUpdates();
 
             // Create an Observable to receive messages from the server
 //            Observable<Object> serverMessages = Observable.create(emitter -> {
@@ -152,27 +157,8 @@ public class Client implements ConnectionHandler, Serializable {
 //
 //            });
 
-            // Create an Observable to receive drawing events from the server
-//            Observable<Shape> serverDrawingEvents = Observable.create(emitter -> {
-//                while (true) {
-//                    try {
-//                        // Read a Shape object from the server
-//                        Shape receivedShape = (Shape) inputStream.readObject();
-//
-//                        // Emit the received shape to subscribers
-//                        emitter.onNext(receivedShape);
-//                    } catch (IOException | ClassNotFoundException e) {
-//                        // Handle communication or deserialization error
-//                        emitter.onError(e);
-//                        break;
-//                    }
-//                }
-//            });
-//
-//            // Subscribe to drawing events from the server
-//            serverDrawingEvents.subscribe(this::handleDrawingUpdate);
-//
-//            // Create an Observable to send drawing events to the server
+
+            // Create an Observable to send drawing events to the server
 //            sendDrawingEvents().observeOn(Schedulers.io())
 //                    .subscribe(shape -> {
 //                        try {
@@ -203,18 +189,18 @@ public class Client implements ConnectionHandler, Serializable {
             }).subscribeOn(Schedulers.io()); // Perform blocking I/O in a background thread
 
 // Subscribe to drawing events from the server
-            serverDrawingEvents.subscribe(
-                    shape -> {
-                        // Handle the received shape
-                        handleDrawingUpdate(shape);
-
-                        System.out.println("nepp?");
-                    },
-                    error -> {
-                        // Handle errors, e.g., communication or deserialization errors
-                        error.printStackTrace();
-                    }
-            );
+//            serverDrawingEvents.subscribe(
+//                    shape -> {
+//                        // Handle the received shape
+//                        handleDrawingUpdate(shape);
+//
+//                        System.out.println("nepp?");
+//                    },
+//                    error -> {
+//                        // Handle errors, e.g., communication or deserialization errors
+//                        error.printStackTrace();
+//                    }
+//            );
 
             // Handle other communication or tasks with the server here
 
@@ -225,12 +211,4 @@ public class Client implements ConnectionHandler, Serializable {
         }
     }
 
-    //TODO HÄR FÅR JAG FAN IN SHAPEN
-    // Implement the drawShape method to handle new shapes received from DrawingPanel
-    public void drawShape(Shape shape) {
-
-        // vad gör jag sen=?
-
-        System.out.println("Received new shape: " + shape);
-    }
 }

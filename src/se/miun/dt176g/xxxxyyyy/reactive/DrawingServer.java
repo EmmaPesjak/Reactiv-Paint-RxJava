@@ -32,13 +32,14 @@ public class DrawingServer implements ConnectionHandler, Serializable {
     private final Drawing drawing = new Drawing();
     private MainFrame mainFrame;
     private ServerSocket serverSocket;
-    public PublishSubject<Shape> drawingUpdates = PublishSubject.create();
+    //public PublishSubject<Shape> drawingUpdates = PublishSubject.create();
     private PublishSubject<Shape> serverDrawingUpdates = PublishSubject.create();
     private Subject<Socket> connections = PublishSubject.create();
     private boolean acceptConnections = true;
     public DrawingPanel drawingPanel;
     public static Menu menu = new Menu();
     private static final long serialVersionUID = 1L;
+    private List<Socket> clientSockets = new ArrayList<>();
 
     private ObjectInputStream inputStream;
     private ObjectOutputStream outputStream;
@@ -46,8 +47,6 @@ public class DrawingServer implements ConnectionHandler, Serializable {
     private Socket socket;
 
     private CompositeDisposable disposables = new CompositeDisposable();
-
-
 
     /**
      * Main starting point of the server side of the application.
@@ -61,6 +60,35 @@ public class DrawingServer implements ConnectionHandler, Serializable {
             server.setMainFrame(frame);
             server.startServer();
         });
+    }
+
+    //TODO HÄR FÅR JAG FAN IN SHAPEN
+    public void sendShapeToClients(Shape shape) {
+        try {
+            // Send the shape to all connected clients
+            for (Socket clientSocket : clientSockets) {
+//                ObjectOutputStream clientOutputStream = new ObjectOutputStream(clientSocket.getOutputStream());
+//                clientOutputStream.writeObject(shape);
+//                clientOutputStream.flush();
+//                System.out.println("Sent shape to client: " + shape);
+
+                //outputStream.writeObject(shape);
+                System.out.println("Sent shape to the client: " + shape);
+            }
+
+            // Broadcast the shape to other clients
+            // broadcastDrawingUpdate(shape);
+
+            // Emit the drawing update to the serverDrawingUpdates subject
+            //serverDrawingUpdates.onNext(shape);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        //System.out.println("Received new shape: " + shape);
+        //drawingUpdates.onNext(shape); //huh?
+//        broadcastDrawingUpdate(shape);
+//        serverDrawingUpdates.onNext(shape);
     }
 
     public DrawingServer() {
@@ -107,13 +135,50 @@ public class DrawingServer implements ConnectionHandler, Serializable {
         try {
             ObjectOutputStream clientOutputStream = new ObjectOutputStream(socket.getOutputStream());
             clientSockets.add(socket);
-            //clientOutputStream.writeObject("hello");
             clientOutputStream.flush(); // Flush the output stream
         } catch (IOException e) {
             e.printStackTrace();
         }
 
+        try {
+            // Create an ObjectInputStream to read objects from the client
+            ObjectInputStream clientInputStream = new ObjectInputStream(socket.getInputStream());
+
+            // Create an Observable for incoming drawing events
+            Observable<Shape> clientDrawingEvents = Observable.create(emitter -> {
+                while (!emitter.isDisposed()) {
+                    Shape receivedShape = (Shape) clientInputStream.readObject();
+
+                    // Emit the received shape to subscribers
+                    System.out.println("Emitting received shape to subscribers: " + receivedShape); // Debug statement
+                    emitter.onNext(receivedShape);
+                }
+            });
+            System.out.println("Subscribing to clientDrawingEvents observable");
+            // Subscribe to the Observable on the io() scheduler for blocking I/O
+            clientDrawingEvents
+                    .observeOn(Schedulers.io())
+                    .subscribe(
+                            shape -> {
+                                // Handle the received shape here
+                                // For example, add it to the drawing and broadcast it to other clients
+                                //receiveDrawingUpdate(shape);
+                                // Print the received shape to the console
+                                System.out.println("Received shape from client: " + shape);
+
+                                // TODO herrejävlar här kom det en shape
+                            },
+                            error -> {
+                                // Handle errors, e.g., communication or deserialization errors
+                                error.printStackTrace();
+                            }
+                    );
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
+
+
 
     public Observable<Void> startHandling() {
         return Observable.create(emitter -> {
@@ -129,7 +194,7 @@ public class DrawingServer implements ConnectionHandler, Serializable {
         });
     }
 
-    private List<Socket> clientSockets = new ArrayList<>();
+
 
     public void startServer() {
         Thread serverThread = new Thread(() -> {
@@ -180,28 +245,32 @@ public class DrawingServer implements ConnectionHandler, Serializable {
         }
     }
 
+//    public void receiveDrawingUpdate(Shape shape) {
+//        drawing.addShape(shape);
+//
+//        // Emit the drawing update to the main drawingUpdates subject
+//        //drawingUpdates.onNext(shape);
+//
+//        System.out.println("haaaallo");
+//        // Emit the drawing update to the serverDrawingUpdates subject
+//        serverDrawingUpdates.onNext(shape);
+//    }
+
     public void receiveDrawingUpdate(Shape shape) {
-        drawing.addShape(shape);
+        //drawing.addShape(shape);
 
-        // Emit the drawing update to the main drawingUpdates subject
-        drawingUpdates.onNext(shape);
-
+        System.out.println("server got a shape from the client: " + shape);
         // Emit the drawing update to the serverDrawingUpdates subject
-        serverDrawingUpdates.onNext(shape);
+        //serverDrawingUpdates.onNext(shape);
     }
 
-    //TODO HÄR FÅR JAG FAN IN SHAPEN
-    public void drawShape(Shape shape) {
-        System.out.println("Received new shape: " + shape);
-        //drawingUpdates.onNext(shape); huh?
-        broadcastDrawingUpdate(shape);
-    }
+
+
 
     // Modify the broadcastDrawingUpdate method to send drawing events to clients
     public void broadcastDrawingUpdate(Shape shape) {
         // Iterate through connected clients and send the drawing event to each client.
 
-        System.out.println("client len: " + clientSockets.size());
 
 //        for (Client client : clients) {
 //            client.sendDrawingUpdate(shape);
@@ -209,8 +278,11 @@ public class DrawingServer implements ConnectionHandler, Serializable {
 //        }
 
         for (Socket clientSocket : clientSockets) {
-            sendDrawingUpdate(clientSocket, shape);
-            System.out.println("nix?");
+            //sendDrawingUpdate(clientSocket, shape);
+            sendDrawingEvents();
+            System.out.println("sending shape:" + shape);
+            // Emit the drawing update to the serverDrawingUpdates subject
+            serverDrawingUpdates.onNext(shape);
         }
     }
 
@@ -235,6 +307,10 @@ public class DrawingServer implements ConnectionHandler, Serializable {
 
     // Create an Observer to represent sending drawing events to clients
     public Observer<Shape> sendDrawingEvents() {
+
+        System.out.println("haaaallo2");
+
+        System.out.println(serverDrawingUpdates);
         return serverDrawingUpdates;
     }
 
@@ -250,10 +326,10 @@ public class DrawingServer implements ConnectionHandler, Serializable {
         return drawingPanel;
     }
 
-    // Create an Observable to represent receiving drawing events from clients
-    public Observable<Shape> receiveDrawingEvents() {
-        return drawingUpdates;
-    }
+//    // Create an Observable to represent receiving drawing events from clients
+//    public Observable<Shape> receiveDrawingEvents() {
+//        return drawingUpdates;
+//    }
 
 }
 

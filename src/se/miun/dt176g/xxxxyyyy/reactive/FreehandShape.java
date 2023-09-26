@@ -1,6 +1,7 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
 import java.awt.*;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,10 +12,11 @@ import java.util.List;
  * @version 1.0
  * @since 	2023-09-07
  */
-public class FreehandShape extends Shape {
+public class FreehandShape extends Shape implements Serializable {
     private final List<Point> path; // Store the points for drawing the freehand shape.
     private final Color color;
     private final int thickness;
+    private static final long serialVersionUID = 1L;
 
     /**
      * Constructor that sets the color and thickness of the rectangle.

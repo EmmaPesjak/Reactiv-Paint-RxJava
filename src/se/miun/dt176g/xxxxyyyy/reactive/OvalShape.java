@@ -1,6 +1,7 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
 import java.awt.*;
+import java.io.Serializable;
 
 /**
  * <h1>OvalShape</h1> Creates an Oval-object.
@@ -9,11 +10,12 @@ import java.awt.*;
  * @version 1.0
  * @since 	2023-09-07
  */
-public class OvalShape extends Shape {
+public class OvalShape extends Shape implements Serializable {
     private Point startPoint;
     private Point endPoint;
     private final Color color;
     private final int thickness;
+    private static final long serialVersionUID = 1L;
 
     /**
      * Constructor that sets the color and thickness of the rectangle.

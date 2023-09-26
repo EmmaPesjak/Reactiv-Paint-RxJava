@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.io.Serializable;
 
 /**
  * <h1>LineShape</h1> Creates a Line-object.
@@ -13,11 +14,12 @@ import java.awt.Point;
  * @version 1.0
  * @since 	2023-09-07
  */
-public class LineShape extends Shape {
+public class LineShape extends Shape implements Serializable {
     private Point startPoint;
     private Point endPoint;
     private final Color color;
     private final int thickness;
+    private static final long serialVersionUID = 1L;
 
     /**
      * Constructor that sets the color and thickness of the line.

@@ -7,32 +7,26 @@ import javax.swing.*;
 
 /**
  * <h1>MainFrame</h1>
- * JFrame for the applications GUI.
+ * JFrame for the application's GUI.
  * @author 	Emma Pesjak
  * @version 1.0
  * @since 	2023-09-25
  */
 @SuppressWarnings("serial")
 public class MainFrame extends JFrame {
-	private DrawingPanel drawingPanel;
-	private final JLabel statusLabel;  // Label for the status message
-	private final Menu menu;
+	private final JLabel statusLabel;  // Label for the status message.
 	private final JPanel contentPanel = new JPanel();
 	private JButton connectButton;
 	private Client client;
-	private DrawingServer server;
 
 	/**
 	 * Constructor setting the layout and interface.
 	 */
-	public MainFrame(ConnectionHandler connectionHandler) {
+	public MainFrame(ConnectionHandler connectionHandler, Menu menu) {
 		this.setSize(1200, 900);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setTitle(Constants.TITLE);
 		this.setLayout(new BorderLayout());
-		// Create the menu and add it to the top of the frame.
-		menu = new Menu();
-		this.add(menu, BorderLayout.NORTH);
 		// Create all necessary objects and adds them to the content panel.
 		contentPanel.setLayout(new BorderLayout());
 		this.add(contentPanel, BorderLayout.CENTER);
@@ -40,14 +34,16 @@ public class MainFrame extends JFrame {
 		statusLabel = new JLabel();
 		this.add(statusLabel, BorderLayout.SOUTH);
 
-		initializeUI(connectionHandler);
+		initializeUI(connectionHandler, menu);
 	}
 
 	/**
 	 * Initializes the user interface based on the given type (client/server).
 	 * @param connectionHandler is the connection handler to initialize the UI for.
 	 */
-	private void initializeUI(ConnectionHandler connectionHandler) {
+	private void initializeUI(ConnectionHandler connectionHandler, Menu menu) {
+		// Add a menu.
+		this.add(menu, BorderLayout.NORTH);
 		if (connectionHandler instanceof Client) {
 			initializeClientUI((Client) connectionHandler);
 		} else if (connectionHandler instanceof DrawingServer) {
@@ -70,17 +66,15 @@ public class MainFrame extends JFrame {
 	 * @param server is the server instance for which to set up the UI.
 	 */
 	private void initializeServerUI(DrawingServer server) {
-		this.server = server;
-		setUpDrawing(server.getDrawing());
+		setUpDrawing(server.getDrawingPanel());
 		setStatusMessage(Constants.SERVER);
 	}
 
 	/**
 	 * Sets up the drawing panel within the user interface.
-	 * @param drawing is the drawing canvas/container to display in the panel.
+	 * @param //drawing is the drawing canvas/container to display in the panel.
 	 */
-	public void setUpDrawing(Drawing drawing) {
-		drawingPanel = new DrawingPanel(drawing, menu);
+	public void setUpDrawing(DrawingPanel drawingPanel) {
 		contentPanel.add(drawingPanel, BorderLayout.CENTER);
 	}
 
@@ -124,13 +118,11 @@ public class MainFrame extends JFrame {
 	 */
 	public void setUpFailedToConnect() {
 		JPanel panel = new JPanel();
-
 		JLabel failText = new JLabel(Constants.FAIL_CONNECT_MSG);
 		failText.setFont(new Font("Arial", Font.PLAIN, 24));
 		panel.add(failText);
 		contentPanel.add(panel, BorderLayout.CENTER);
 
-		//TODO kopierat från setUpConnectButton() men med borderlayout south, gör en snyggare lösning
 		connectButton = new JButton(Constants.CONNECT_BTN);
 		// Add an ActionListener to the button for handling the connection to the server.
 		connectButton.addActionListener(e -> connectToServerAndGetDrawing());

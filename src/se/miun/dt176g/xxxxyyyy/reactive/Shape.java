@@ -1,6 +1,7 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
 import java.awt.*;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,7 +13,9 @@ import java.util.List;
  * @version 1.0
  * @since 	2023-09-07
  */
-public abstract class Shape implements Drawable {
+public abstract class Shape implements Drawable, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * Method for drawing the Shape.

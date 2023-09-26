@@ -1,6 +1,7 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
 import java.awt.*;
+import java.io.Serializable;
 
 /**
  * <h1>RectangleShape</h1> Creates a Rectangle-object.
@@ -9,7 +10,9 @@ import java.awt.*;
  * @version 1.0
  * @since 	2023-09-07
  */
-public class RectangleShape extends Shape {
+public class RectangleShape extends Shape implements Serializable {
+
+    private static final long serialVersionUID = 1L;
     private Point startPoint;
     private Point endPoint;
     private final Color color;

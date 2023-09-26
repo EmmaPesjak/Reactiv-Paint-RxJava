@@ -21,6 +21,16 @@ public class DrawingPanel extends JPanel {
 	public int selectedThickness = 2; // Default thickness.
 	public String selectedShape = "Freehand"; // Default shape type.
 
+	private Client client; // Add this field
+	private DrawingServer server;
+
+	public void setClient(Client client) {  // använda mitt interface istället?
+		this.client = client;
+	}
+	public void setServer(DrawingServer server) {
+		this.server = server;
+	}
+
 	/**
 	 * Constructor which creates the mouse event listeners and subscribes to the menu observables.
 	 * @param drawing is the container of drawn shapes.
@@ -109,6 +119,14 @@ public class DrawingPanel extends JPanel {
 					((RectangleShape) currentShape).setStartPoint(new Point(x, y));
 					((RectangleShape) currentShape).setEndPoint(new Point(x, y));
 					drawing.addShape(currentShape);
+					if (client != null) {
+						client.drawShape(currentShape);
+					}
+					// Notify the server about the new shape
+					if (server != null) {
+						server.drawShape(currentShape);
+					}
+
 				} else if (e.getID() == MouseEvent.MOUSE_DRAGGED && currentShape instanceof RectangleShape) {
 					((RectangleShape) currentShape).setEndPoint(new Point(x, y));
 				}
@@ -119,6 +137,14 @@ public class DrawingPanel extends JPanel {
 					((OvalShape) currentShape).setStartPoint(new Point(x, y));
 					((OvalShape) currentShape).setEndPoint(new Point(x, y));
 					drawing.addShape(currentShape);
+					if (client != null) {
+						client.drawShape(currentShape);
+					}
+					// Notify the server about the new shape
+					if (server != null) {
+						server.drawShape(currentShape);
+					}
+
 				} else if (e.getID() == MouseEvent.MOUSE_DRAGGED && currentShape instanceof OvalShape) {
 					((OvalShape) currentShape).setEndPoint(new Point(x, y));
 				}
@@ -129,6 +155,14 @@ public class DrawingPanel extends JPanel {
 					((LineShape) currentShape).setStartPoint(new Point(x, y));
 					((LineShape) currentShape).setEndPoint(new Point(x, y));
 					drawing.addShape(currentShape);
+					if (client != null) {
+						client.drawShape(currentShape);
+					}
+					// Notify the server about the new shape
+					if (server != null) {
+						server.drawShape(currentShape);
+					}
+
 				} else if (e.getID() == MouseEvent.MOUSE_DRAGGED && currentShape instanceof LineShape) {
 					((LineShape) currentShape).setEndPoint(new Point(x, y));
 				}
@@ -138,6 +172,14 @@ public class DrawingPanel extends JPanel {
 					currentShape = new FreehandShape(selectedColor, selectedThickness);
 					((FreehandShape) currentShape).addPoint(x, y);
 					drawing.addShape(currentShape);
+					if (client != null) {
+						client.drawShape(currentShape);
+					}
+					// Notify the server about the new shape
+					if (server != null) {
+						server.drawShape(currentShape);
+					}
+
 				} else if (e.getID() == MouseEvent.MOUSE_DRAGGED && currentShape instanceof FreehandShape) {
 					((FreehandShape) currentShape).addPoint(x, y);
 				}
@@ -159,6 +201,10 @@ public class DrawingPanel extends JPanel {
 		for (Shape shape : drawing.getShapes()) {
 			shape.draw(g);
 		}
+	}
+
+	public void addShape(Shape shape) {
+		drawing.addShape(shape);
 	}
 
 	/**

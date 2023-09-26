@@ -121,7 +121,7 @@ public class DrawingPanel extends JPanel {
 					((RectangleShape) currentShape).setEndPoint(new Point(x, y));
 					drawing.addShape(currentShape);
 
-					//send to server/client
+					//send to server/client  //TODO ska man göra detta på mouse dragged? nej då pumpas det ut shapes, behöver ha på released? eller drawing.addshape?
 					Optional.ofNullable(client).ifPresent(c -> c.sendShapeToServer(currentShape));
 					Optional.ofNullable(server).ifPresent(s -> s.sendShapeToClients(currentShape));
 

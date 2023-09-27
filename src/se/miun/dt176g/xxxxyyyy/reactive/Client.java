@@ -65,19 +65,9 @@ public class Client implements ConnectionHandler, Serializable {
                     outputStream = new ObjectOutputStream(socket.getOutputStream());
                     inputStream = new ObjectInputStream(socket.getInputStream());
 
-                } catch (IOException e) {
-                    mainFrame.setUpFailedToConnect();
-                    e.printStackTrace();
-                }
-
-                try {
-                    // Create an ObjectInputStream to read objects from the server
-                    ObjectInputStream serverInputStream = new ObjectInputStream(socket.getInputStream());
-
-                    // Subscribe to the Observable on the io() scheduler for blocking I/O
                     Observable<Shape> serverDrawingEvents = Observable.create(emitter -> {
                         while (!emitter.isDisposed()) {
-                            Shape receivedShape = (Shape) serverInputStream.readObject();
+                            Shape receivedShape = (Shape) inputStream.readObject();
                             System.out.println("Received shape from server: " + receivedShape);
                             // Draw the received shape without emitting it as an event
                             drawReceivedShape(receivedShape);
@@ -96,9 +86,42 @@ public class Client implements ConnectionHandler, Serializable {
                                         error.printStackTrace();
                                     }
                             );
+
                 } catch (IOException e) {
+                    mainFrame.setUpFailedToConnect();
                     e.printStackTrace();
                 }
+
+//                try {
+//                    // Create an ObjectInputStream to read objects from the server
+//                    //TODO oj denna hade jag redan?
+//                    //ObjectInputStream serverInputStream = new ObjectInputStream(socket.getInputStream());
+//
+//                    // Subscribe to the Observable on the io() scheduler for blocking I/O
+//                    Observable<Shape> serverDrawingEvents = Observable.create(emitter -> {
+//                        while (!emitter.isDisposed()) {
+//                            Shape receivedShape = (Shape) inputStream.readObject();
+//                            System.out.println("Received shape from server: " + receivedShape);
+//                            // Draw the received shape without emitting it as an event
+//                            drawReceivedShape(receivedShape);
+//                        }
+//                    });
+//
+//                    serverDrawingEvents
+//                            .observeOn(Schedulers.io())
+//                            .subscribe(
+//                                    shape -> {
+//                                        // This block will never be executed
+//                                        // because received shapes are drawn directly above
+//                                    },
+//                                    error -> {
+//                                        // Handle errors, e.g., communication or deserialization errors
+//                                        error.printStackTrace();
+//                                    }
+//                            );
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
 
                 return null;
             }

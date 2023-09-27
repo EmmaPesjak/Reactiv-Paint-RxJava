@@ -15,7 +15,9 @@ import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * <h1>Server</h1>
@@ -36,6 +38,8 @@ public class Server implements ConnectionHandler, Serializable {
     private static final long serialVersionUID = 1L;
     private List<Socket> clientSockets = new ArrayList<>();
     private CompositeDisposable disposables = new CompositeDisposable();
+    private Map<Socket, ObjectOutputStream> clientOutputStreams = new HashMap<>();
+
 
     public Server() {
         try {
@@ -71,20 +75,32 @@ public class Server implements ConnectionHandler, Serializable {
     public void sendShapeToClients(Shape shape) {  // här får jag ju inte skicka till baka dit det kom från
 
 
-        for (Socket clientSocket : clientSockets) {
+//        for (Socket clientSocket : clientSockets) {
+//            try {
+//                ObjectOutputStream objectOutputStream = new ObjectOutputStream(clientSocket.getOutputStream());
+//                objectOutputStream.writeObject(shape);
+//                objectOutputStream.flush();
+//                System.out.println("Sent shape to the client: " + shape);
+//
+//                //objectOutputStream.reset();
+//
+//
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+
+        for (ObjectOutputStream outputStream : clientOutputStreams.values()) {
             try {
-                ObjectOutputStream objectOutputStream = new ObjectOutputStream(clientSocket.getOutputStream());
-                objectOutputStream.writeObject(shape);
-                objectOutputStream.flush();
-                System.out.println("Sent shape to the client: " + shape);
-
-                //objectOutputStream.reset();
-
-
+                outputStream.writeObject(shape);
+                outputStream.flush();
+                System.out.println("Sent shape to a client: " + shape);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+
+
     }
 
     private void handleServerSocketError(IOException e) {
@@ -95,11 +111,16 @@ public class Server implements ConnectionHandler, Serializable {
 
     private void handleIncomingConnection(Socket socket) {
 
-
+// TODO SOM FAN JAG GÖR JU FÖR BÖVELEN 17 OUTPUTSTREAMS ta bort
         try {
+//            ObjectOutputStream clientOutputStream = new ObjectOutputStream(socket.getOutputStream());
+//            clientSockets.add(socket);
+//            clientOutputStream.flush(); // Flush the output stream
+
             ObjectOutputStream clientOutputStream = new ObjectOutputStream(socket.getOutputStream());
-            clientSockets.add(socket);
+            clientOutputStreams.put(socket, clientOutputStream); // Store the stream for this client
             clientOutputStream.flush(); // Flush the output stream
+
 
             // Create an ObjectInputStream to read objects from the client
             ObjectInputStream clientInputStream = new ObjectInputStream(socket.getInputStream());
@@ -130,18 +151,33 @@ public class Server implements ConnectionHandler, Serializable {
                     drawReceivedShape(shape); // Draw the received shape.
 
                     // Send the shape to all clients (excluding the sender)
+//                    for (Socket clientSocket : clientSockets) {
+//                        if (clientSocket != socket) {
+//                            try {
+//                                ObjectOutputStream objectOutputStream = new ObjectOutputStream(clientSocket.getOutputStream());
+//                                objectOutputStream.writeObject(shape);
+//                                objectOutputStream.flush();
+//                                System.out.println("Sent shape to client: " + shape);
+//                            } catch (IOException e) {
+//                                e.printStackTrace();
+//                            }
+//                        }
+//                    }
                     for (Socket clientSocket : clientSockets) {
                         if (clientSocket != socket) {
-                            try {
-                                ObjectOutputStream objectOutputStream = new ObjectOutputStream(clientSocket.getOutputStream());
-                                objectOutputStream.writeObject(shape);
-                                objectOutputStream.flush();
-                                System.out.println("Sent shape to client: " + shape);
-                            } catch (IOException e) {
-                                e.printStackTrace();
+                            ObjectOutputStream objectOutputStream = clientOutputStreams.get(clientSocket);
+                            if (objectOutputStream != null) {
+                                try {
+                                    objectOutputStream.writeObject(shape);
+                                    objectOutputStream.flush();
+                                    System.out.println("Sent shape to client: " + shape);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
                             }
                         }
                     }
+
                 }
 
                 @Override

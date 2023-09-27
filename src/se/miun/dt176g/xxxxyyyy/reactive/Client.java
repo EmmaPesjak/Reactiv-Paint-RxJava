@@ -16,7 +16,7 @@ import java.net.Socket;
  * //Incoming connections(receiving drawing events/objects from others over the network)should be represented as Observables.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-26
+ * @since 	2023-09-27
  */
 public class Client implements ConnectionHandler, Serializable {
     private Socket socket;
@@ -25,7 +25,7 @@ public class Client implements ConnectionHandler, Serializable {
     private ObjectOutputStream outputStream;
     private ObjectInputStream inputStream;
     private DrawingPanel drawingPanel;
-    private static final long serialVersionUID = 1L; // Change this value when the class structure changes
+    private static final long serialVersionUID = 1L;
 
     public static void main(String[] args) {
         // Create an instance of Client.
@@ -47,9 +47,7 @@ public class Client implements ConnectionHandler, Serializable {
             socket = new Socket(Constants.ADDRESS, Constants.PORT);
 
             Drawing drawing = new Drawing(); //TODO Inte ny drawing ju
-            drawingPanel = new DrawingPanel(drawing, menu);
-            // Set the client reference in the DrawingPanel
-            drawingPanel.setClient(this);
+            drawingPanel = new DrawingPanel(drawing, menu, this);
 
             mainFrame.setUpDrawing(drawingPanel);
             mainFrame.setStatusMessage(Constants.CLIENT_CONNECT_MSG);

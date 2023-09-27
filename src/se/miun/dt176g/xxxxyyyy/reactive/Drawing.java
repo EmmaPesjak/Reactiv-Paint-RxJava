@@ -1,5 +1,6 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,10 +10,11 @@ import java.util.List;
  * a list container.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-07
+ * @since 	2023-09-27
  */
-public class Drawing implements Drawable {
-	private final List<Shape> shapes;  // här vetekatten om det bästa är en list men vi kör på det så länge
+public class Drawing implements Drawable, Serializable {
+	private static final long serialVersionUID = 1L;
+	private final List<Shape> shapes;
 
 	/**
 	 * Constructor that creates the list container.
@@ -33,7 +35,9 @@ public class Drawing implements Drawable {
 	 */
 	@Override
 	public void addShape(Shape shape) {
-		shapes.add(shape);
+		if (shape != null) {
+			shapes.add(shape);
+		}
 	}
 
 	/**

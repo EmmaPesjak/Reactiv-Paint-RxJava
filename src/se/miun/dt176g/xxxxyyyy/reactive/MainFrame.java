@@ -10,7 +10,7 @@ import javax.swing.*;
  * JFrame for the application's GUI.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-25
+ * @since 	2023-09-27
  */
 @SuppressWarnings("serial")
 public class MainFrame extends JFrame {
@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
 
 	/**
 	 * Sets up the drawing panel within the user interface.
-	 * @param //drawing is the drawing canvas/container to display in the panel.
+	 * @param drawingPanel is the DrawingPanel to add.
 	 */
 	public void setUpDrawing(DrawingPanel drawingPanel) {
 		contentPanel.add(drawingPanel, BorderLayout.CENTER);

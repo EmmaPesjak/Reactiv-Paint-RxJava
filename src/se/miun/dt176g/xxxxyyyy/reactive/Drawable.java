@@ -7,10 +7,9 @@ import java.util.List;
  * Drawable interface.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2022-09-07
+ * @since 	2022-09-27
  */
 public interface Drawable {
-	//void draw(java.awt.Graphics g); // detta hade peter men jag gör ju litta annat så kan man ta bort?
 
 	/**
 	 * Adds a shape to the shapes list.

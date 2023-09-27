@@ -16,14 +16,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * <h1>DrawingServer</h1>
+ * <h1>Server</h1>
  * //Incoming connections (receiving drawing events/objects from others over the network) should be represented as Observables.
  *     //Outgoing connections (sending drawing events/objects to others over the network) should be represented as Observers.
  * @author 	Emma Pesjak
  * @version 1.0
  * @since 	2023-09-27
  */
-public class DrawingServer implements ConnectionHandler, Serializable {
+public class Server implements ConnectionHandler, Serializable {
 
     private final Drawing drawing = new Drawing();
     private MainFrame mainFrame;
@@ -35,7 +35,7 @@ public class DrawingServer implements ConnectionHandler, Serializable {
     private List<Socket> clientSockets = new ArrayList<>();
     private CompositeDisposable disposables = new CompositeDisposable();
 
-    public DrawingServer() {
+    public Server() {
         try {
             drawingPanel = new DrawingPanel(drawing, menu, this);
             serverSocket = new ServerSocket(Constants.PORT);
@@ -49,7 +49,7 @@ public class DrawingServer implements ConnectionHandler, Serializable {
      * @param args not applicable here.
      */
     public static void main(String[] args) {
-        DrawingServer server = new DrawingServer(); // Create an instance of DrawingServer.
+        Server server = new Server(); // Create an instance of Server.
         SwingUtilities.invokeLater(() -> {
             MainFrame frame = new MainFrame(server, menu); // Pass the server instance to MainFrame
             frame.setVisible(true);

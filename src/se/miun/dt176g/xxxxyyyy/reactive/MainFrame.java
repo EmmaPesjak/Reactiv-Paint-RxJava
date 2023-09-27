@@ -46,8 +46,8 @@ public class MainFrame extends JFrame {
 		this.add(menu, BorderLayout.NORTH);
 		if (connectionHandler instanceof Client) {
 			initializeClientUI((Client) connectionHandler);
-		} else if (connectionHandler instanceof DrawingServer) {
-			initializeServerUI((DrawingServer) connectionHandler);
+		} else if (connectionHandler instanceof Server) {
+			initializeServerUI((Server) connectionHandler);
 		}
 	}
 
@@ -65,7 +65,7 @@ public class MainFrame extends JFrame {
 	 * Initializes the server user interface.
 	 * @param server is the server instance for which to set up the UI.
 	 */
-	private void initializeServerUI(DrawingServer server) {
+	private void initializeServerUI(Server server) {
 		setUpDrawing(server.getDrawingPanel());
 		setStatusMessage(Constants.SERVER);
 	}

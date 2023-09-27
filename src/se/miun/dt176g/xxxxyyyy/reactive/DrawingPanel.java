@@ -22,7 +22,7 @@ public class DrawingPanel extends JPanel {
 	public int selectedThickness = 2; // Default thickness.
 	public String selectedShape = "Freehand"; // Default shape type.
 	private Client client;
-	private DrawingServer server;
+	private Server server;
 
 	/**
 	 * Constructor which creates the mouse event listeners and subscribes to the menu observables.
@@ -33,7 +33,7 @@ public class DrawingPanel extends JPanel {
 		this.drawing = drawing;
 		// Set the client or server.
 		this.client = (connectionHandler instanceof Client) ? (Client) connectionHandler : this.client;
-		this.server = (connectionHandler instanceof DrawingServer) ? (DrawingServer) connectionHandler : this.server;
+		this.server = (connectionHandler instanceof Server) ? (Server) connectionHandler : this.server;
 
 		// Create a subject for mouse events.
 		PublishSubject<MouseEvent> mouseEventSubject = PublishSubject.create();
@@ -170,7 +170,7 @@ public class DrawingPanel extends JPanel {
 	 */
 	public void onClear() {
 		Optional.ofNullable(client).ifPresent(Client::clearEvent);
-		Optional.ofNullable(server).ifPresent(DrawingServer::clearEvent);
+		Optional.ofNullable(server).ifPresent(Server::clearEvent);
 	}
 
 	/**

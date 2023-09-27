@@ -1,7 +1,9 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import se.miun.dt176g.xxxxyyyy.reactive.support.Constants;
 
@@ -66,18 +68,22 @@ public class Server implements ConnectionHandler, Serializable {
         return drawingPanel;
     }
 
-    public void sendShapeToClients(Shape shape) {
-        try {
-            // Send the shape to all connected clients
-            for (Socket clientSocket : clientSockets) {
+    public void sendShapeToClients(Shape shape) {  // här får jag ju inte skicka till baka dit det kom från
 
-                // here is where I potentially want to send the shape!
 
+        for (Socket clientSocket : clientSockets) {
+            try {
+                ObjectOutputStream objectOutputStream = new ObjectOutputStream(clientSocket.getOutputStream());
+                objectOutputStream.writeObject(shape);
+                objectOutputStream.flush();
                 System.out.println("Sent shape to the client: " + shape);
-            }
 
-        } catch (Exception e) {
-            e.printStackTrace();
+                //objectOutputStream.reset();
+
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -89,15 +95,12 @@ public class Server implements ConnectionHandler, Serializable {
 
     private void handleIncomingConnection(Socket socket) {
 
+
         try {
             ObjectOutputStream clientOutputStream = new ObjectOutputStream(socket.getOutputStream());
             clientSockets.add(socket);
             clientOutputStream.flush(); // Flush the output stream
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
-        try {
             // Create an ObjectInputStream to read objects from the client
             ObjectInputStream clientInputStream = new ObjectInputStream(socket.getInputStream());
 
@@ -107,32 +110,57 @@ public class Server implements ConnectionHandler, Serializable {
                     Shape receivedShape = (Shape) clientInputStream.readObject();
 
                     // Emit the received shape to subscribers
-                    System.out.println("Emitting received shape to subscribers: " + receivedShape); // Debug statement
                     emitter.onNext(receivedShape);
                 }
             });
-            System.out.println("Subscribing to clientDrawingEvents observable");
-            // Subscribe to the Observable on the io() scheduler for blocking I/O
+
+            // Create an observer for this client
+            Observer<Shape> clientObserver = new Observer<Shape>() {
+                @Override
+                public void onSubscribe(Disposable d) {
+                    // Nothing needed here
+                }
+
+                @Override
+                public void onNext(Shape shape) {
+                    // Handle the received shape here
+                    // For example, add it to the drawing and broadcast it to other clients
+                    System.out.println("Received shape from client: " + shape);
+
+                    drawReceivedShape(shape); // Draw the received shape.
+
+                    // Send the shape to all clients (excluding the sender)
+                    for (Socket clientSocket : clientSockets) {
+                        if (clientSocket != socket) {
+                            try {
+                                ObjectOutputStream objectOutputStream = new ObjectOutputStream(clientSocket.getOutputStream());
+                                objectOutputStream.writeObject(shape);
+                                objectOutputStream.flush();
+                                System.out.println("Sent shape to client: " + shape);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    // Handle errors, if any
+                    e.printStackTrace();
+                }
+
+                @Override
+                public void onComplete() {
+                    // Handle completion, if needed
+                }
+            };
+
+            // Subscribe this client's observer to the observable
             clientDrawingEvents
                     .observeOn(Schedulers.io())
-                    .subscribe(
-                            shape -> {
-                                // Handle the received shape here
-                                // For example, add it to the drawing and broadcast it to other clients
-                                //receiveDrawingUpdate(shape);
-                                // Print the received shape to the console
-                                System.out.println("Received shape from client: " + shape);
+                    .subscribe(clientObserver);
 
-                                drawReceivedShape(shape); // Draw the received shape.
-                                sendShapeToClients(shape); // Make sure to send the shape to all clients.
-
-                                // TODO herrejävlar här kom det en shape från clienten
-                            },
-                            error -> {
-                                // Handle errors, e.g., communication or deserialization errors
-                                error.printStackTrace();
-                            }
-                    );
         } catch (IOException e) {
             e.printStackTrace();
         }

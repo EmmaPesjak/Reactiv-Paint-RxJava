@@ -55,6 +55,7 @@ public class DrawingPanel extends JPanel {
 			}
 		});
 
+
 		// Handle mouse drag events.
 		addMouseMotionListener(new MouseAdapter() {
 			@Override
@@ -71,7 +72,7 @@ public class DrawingPanel extends JPanel {
 		menu.colorObservable()
 				.subscribe(this::handleColorChange);
 		menu.clearDrawingObservable()
-				.subscribe(clear -> clearDrawing());
+				.subscribe(clear -> onClear());
 
 		// Subscribe to the mouse event observable to handle drawing.
 		mouseEventObservable.subscribe(this::handleMouseEvent);
@@ -105,7 +106,7 @@ public class DrawingPanel extends JPanel {
 	 * Handles mouse events, creating shapes drawn in the GUI.
 	 * @param e is the mouse event.
 	 */
-	private void handleMouseEvent(MouseEvent e) {	//TODO kolla upp thread safety.
+	private void handleMouseEvent(MouseEvent e) {
 		int x = e.getX();
 		int y = e.getY();
 		String selectedShapeType = selectedShape;
@@ -149,11 +150,27 @@ public class DrawingPanel extends JPanel {
 					((FreehandShape) currentShape).addPoint(x, y);
 				}
 				break;
-
-				//TODO lägg till default med error handling?
+			default:
+				throw new IllegalArgumentException("Invalid selectedShapeType: " + selectedShapeType);
 		}
 		// Repaint the panel with the updated drawing.
 		repaint();
+	}
+
+	/**
+	 * Clear the drawing and repaints the panel.
+	 */
+	public void clearDrawing() {
+		drawing.clear();
+		repaint(); // Redraw the panel to reflect the cleared drawing.
+	}
+
+	/**
+	 * Clears the drawing and notifies the associated client/server, about the clear event.
+	 */
+	public void onClear() {
+		Optional.ofNullable(client).ifPresent(Client::clearEvent);
+		Optional.ofNullable(server).ifPresent(DrawingServer::clearEvent);
 	}
 
 	/**
@@ -166,14 +183,5 @@ public class DrawingPanel extends JPanel {
 		for (Shape shape : drawing.getShapes()) {
 			shape.draw(g);
 		}
-	}
-
-	/**
-	 * Clear the drawing.
-	 */
-	public void clearDrawing() {
-		drawing.clear();
-		repaint(); // Redraw the panel to reflect the cleared drawing.
-		// TODO: fungerar inte att cleara via server/client
 	}
 }

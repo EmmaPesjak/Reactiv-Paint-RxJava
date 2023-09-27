@@ -177,6 +177,18 @@ public class DrawingServer implements ConnectionHandler, Serializable {
             handleServerSocketError(e);
         }
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void clearEvent() {
+        drawingPanel.clearDrawing();
+
+        System.out.println("should clear");
+
+        // TODO skicka till clienten att vi ska cleara
+    }
 }
 
 // vad händer om någon DCar?

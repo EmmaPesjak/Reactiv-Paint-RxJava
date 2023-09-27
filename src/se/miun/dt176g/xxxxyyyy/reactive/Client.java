@@ -73,6 +73,15 @@ public class Client implements ConnectionHandler, Serializable {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void clearEvent() {
+        drawingPanel.clearDrawing();
 
+        System.out.println("should clear");
 
+        //TODO skicka till servern att vi ska cleara
+    }
 }

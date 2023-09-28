@@ -21,11 +21,10 @@ import java.util.Map;
 
 /**
  * <h1>Server</h1>
- * //Incoming connections (receiving drawing events/objects from others over the network) should be represented as Observables.
- *     //Outgoing connections (sending drawing events/objects to others over the network) should be represented as Observers.
+ * Represents the server-side of the application for handling incoming and outgoing connections/drawing events.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-27
+ * @since 	2023-09-28
  */
 public class Server implements ConnectionHandler, Serializable {
 
@@ -36,11 +35,13 @@ public class Server implements ConnectionHandler, Serializable {
     public DrawingPanel drawingPanel;
     public static Menu menu = new Menu();
     private static final long serialVersionUID = 1L;
-    private List<Socket> clientSockets = new ArrayList<>();
-    private CompositeDisposable disposables = new CompositeDisposable();
-    private Map<Socket, ObjectOutputStream> clientOutputStreams = new HashMap<>();
+    private final List<Socket> clientSockets = new ArrayList<>();
+    private final CompositeDisposable disposables = new CompositeDisposable();
+    private final Map<Socket, ObjectOutputStream> clientOutputStreams = new HashMap<>();
 
-
+    /**
+     * Constructor which sets the DrawingPanel and ServerSocket.
+     */
     public Server() {
         try {
             drawingPanel = new DrawingPanel(drawing, menu, this);
@@ -64,59 +65,52 @@ public class Server implements ConnectionHandler, Serializable {
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void setMainFrame(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
     }
 
+    /**
+     * Getter for the server's DrawingPanel.
+     * @return the DrawingPanel.
+     */
     public DrawingPanel getDrawingPanel() {
         return drawingPanel;
     }
 
-    public void sendShapeToClients(Shape shape) {  // här får jag ju inte skicka till baka dit det kom från
-
-
-//        for (Socket clientSocket : clientSockets) {
-//            try {
-//                ObjectOutputStream objectOutputStream = new ObjectOutputStream(clientSocket.getOutputStream());
-//                objectOutputStream.writeObject(shape);
-//                objectOutputStream.flush();
-//                System.out.println("Sent shape to the client: " + shape);
-//
-//                //objectOutputStream.reset();
-//
-//
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
-
+    /**
+     * Sends a Shape to all connected clients, used when the Server is drawing.
+     * @param shape the Shape to send.
+     */
+    public void sendShapeToClients(Shape shape) {
         for (ObjectOutputStream outputStream : clientOutputStreams.values()) {
             try {
                 outputStream.writeObject(shape);
-                outputStream.flush();
-                System.out.println("Sent shape to a client: " + shape);
+                outputStream.flush(); // Essential to ensure that data is delivered promptly and consistently to its destination.
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-
-
     }
 
+    /***
+     * Handle server socket errors, logs and displays an error message
+     * @param e is the exception
+     */
     private void handleServerSocketError(IOException e) {
-        // Handle server socket errors, e.g., log and display an error message
         e.printStackTrace();
         mainFrame.setStatusMessage(Constants.FAIL_HOST_MSG);
     }
 
+    //TODO oj jag har ju glömt att klienter som connectar måste få allt som redan finns i drawingen! Läste något bra i boken om det någonstans
+
     private void handleIncomingConnection(Socket socket) {
 
-// TODO SOM FAN JAG GÖR JU FÖR BÖVELEN 17 OUTPUTSTREAMS ta bort
         try {
-//            ObjectOutputStream clientOutputStream = new ObjectOutputStream(socket.getOutputStream());
-//            clientSockets.add(socket);
-//            clientOutputStream.flush(); // Flush the output stream
-
+            clientSockets.add(socket);
             ObjectOutputStream clientOutputStream = new ObjectOutputStream(socket.getOutputStream());
             clientOutputStreams.put(socket, clientOutputStream); // Store the stream for this client
             clientOutputStream.flush(); // Flush the output stream
@@ -144,25 +138,8 @@ public class Server implements ConnectionHandler, Serializable {
 
                 @Override
                 public void onNext(Shape shape) {
-                    // Handle the received shape here
-                    // For example, add it to the drawing and broadcast it to other clients
-                    System.out.println("Received shape from client: " + shape);
-
                     drawReceivedShape(shape); // Draw the received shape.
-
-                    // Send the shape to all clients (excluding the sender)
-//                    for (Socket clientSocket : clientSockets) {
-//                        if (clientSocket != socket) {
-//                            try {
-//                                ObjectOutputStream objectOutputStream = new ObjectOutputStream(clientSocket.getOutputStream());
-//                                objectOutputStream.writeObject(shape);
-//                                objectOutputStream.flush();
-//                                System.out.println("Sent shape to client: " + shape);
-//                            } catch (IOException e) {
-//                                e.printStackTrace();
-//                            }
-//                        }
-//                    }
+                    // detta är ju nästan samma som sendShapeToClients(Shape shape) men jag behöver socket :(
                     for (Socket clientSocket : clientSockets) {
                         if (clientSocket != socket) {
                             ObjectOutputStream objectOutputStream = clientOutputStreams.get(clientSocket);
@@ -170,14 +147,12 @@ public class Server implements ConnectionHandler, Serializable {
                                 try {
                                     objectOutputStream.writeObject(shape);
                                     objectOutputStream.flush();
-                                    System.out.println("Sent shape to client: " + shape);
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
                             }
                         }
                     }
-
                 }
 
                 @Override
@@ -192,7 +167,7 @@ public class Server implements ConnectionHandler, Serializable {
                 }
             };
 
-            // Subscribe this client's observer to the observable
+            // Subscribe this client's observer to the observable.
             clientDrawingEvents
                     .observeOn(Schedulers.io())
                     .subscribe(clientObserver);
@@ -202,7 +177,10 @@ public class Server implements ConnectionHandler, Serializable {
         }
     }
 
-
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void drawReceivedShape(Shape shape) {
         SwingUtilities.invokeLater(() -> {
             drawing.addShape(shape);
@@ -210,6 +188,9 @@ public class Server implements ConnectionHandler, Serializable {
         });
     }
 
+    /**
+     * Starts the server by accepting incoming connections in a separate thread.
+     */
     public void startServer() {
         Thread serverThread = new Thread(() -> {
             try {
@@ -226,10 +207,18 @@ public class Server implements ConnectionHandler, Serializable {
 
     }
 
+
+    //TODO måste använda dessa någonstans
+    /**
+     * Shuts down the server, stopping it from accepting new connections.
+     */
     private void shutdown() {
         acceptConnections = false;
     }
 
+    /**
+     * Stops the server, disposing of all resources including RxJava disposables.
+     */
     public void stop() {
         acceptConnections = false;
         disposables.dispose(); // Dispose of all RxJava resources

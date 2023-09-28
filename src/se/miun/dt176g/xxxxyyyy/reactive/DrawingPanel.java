@@ -13,7 +13,7 @@ import javax.swing.*;
  * Creates a Canvas-object for displaying all graphics drawn.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-27
+ * @since 	2023-09-28
  */
 public class DrawingPanel extends JPanel {
 	private final Drawing drawing; // Container for the Shapes.
@@ -21,8 +21,8 @@ public class DrawingPanel extends JPanel {
 	public Color selectedColor = Color.PINK; // Default color.
 	public int selectedThickness = 2; // Default thickness.
 	public String selectedShape = "Freehand"; // Default shape type.
-	private Client client;
-	private Server server;
+	private Client client; // Possible owner of the drawing panel.
+	private Server server; // Possible owner of the drawing panel.
 
 	/**
 	 * Constructor which creates the mouse event listeners and subscribes to the menu observables.
@@ -54,7 +54,6 @@ public class DrawingPanel extends JPanel {
 				Optional.ofNullable(server).ifPresent(s -> s.sendShapeToClients(currentShape));
 			}
 		});
-
 
 		// Handle mouse drag events.
 		addMouseMotionListener(new MouseAdapter() {

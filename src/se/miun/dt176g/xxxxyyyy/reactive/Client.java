@@ -1,11 +1,7 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.ObservableEmitter;
-import io.reactivex.rxjava3.core.Observer;
-import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import io.reactivex.rxjava3.subjects.PublishSubject;
 import se.miun.dt176g.xxxxyyyy.reactive.support.Constants;
 
 import javax.swing.*;
@@ -17,7 +13,7 @@ import java.net.Socket;
  * //Incoming connections(receiving drawing events/objects from others over the network)should be represented as Observables.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-27
+ * @since 	2023-09-28
  */
 public class Client implements ConnectionHandler, Serializable {
     private Socket socket;
@@ -30,18 +26,22 @@ public class Client implements ConnectionHandler, Serializable {
     private Drawing drawing;
     private Client client;
 
-
+    /**
+     * Main starting point of the application for a client.
+     * @param args not applicable here.
+     */
     public static void main(String[] args) {
-        // Create an instance of Client.
-        Client client = new Client();
-        // Create an instance of MainFrame and pass the client instance.
-        MainFrame frame = new MainFrame(client, menu);
-        // Set the client instance for the created client object.
-        client.setMainFrame(frame);
+        Client client = new Client(); // Create an instance of Client.
+        MainFrame frame = new MainFrame(client, menu); // Create an instance of MainFrame and pass the client instance.
+        client.setMainFrame(frame); // Set the MainFrame for the created client object.
         // Make sure GUI is created on the event dispatching thread.
         SwingUtilities.invokeLater(() -> frame.setVisible(true));
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void setMainFrame(MainFrame frame) {
         this.mainFrame = frame;
     }
@@ -49,6 +49,7 @@ public class Client implements ConnectionHandler, Serializable {
     public void connectToServer() {
         client = this;
 
+        // Create a worker thread to avoid blocking the Swing EDT.
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() {
@@ -68,12 +69,12 @@ public class Client implements ConnectionHandler, Serializable {
                     Observable<Shape> serverDrawingEvents = Observable.create(emitter -> {
                         while (!emitter.isDisposed()) {
                             Shape receivedShape = (Shape) inputStream.readObject();
-                            System.out.println("Received shape from server: " + receivedShape);
                             // Draw the received shape without emitting it as an event
                             drawReceivedShape(receivedShape);
                         }
                     });
 
+                    // Handle errors, e.g., communication or deserialization errors
                     serverDrawingEvents
                             .observeOn(Schedulers.io())
                             .subscribe(
@@ -81,61 +82,23 @@ public class Client implements ConnectionHandler, Serializable {
                                         // This block will never be executed
                                         // because received shapes are drawn directly above
                                     },
-                                    error -> {
-                                        // Handle errors, e.g., communication or deserialization errors
-                                        error.printStackTrace();
-                                    }
+                                    Throwable::printStackTrace
                             );
 
                 } catch (IOException e) {
                     mainFrame.setUpFailedToConnect();
                     e.printStackTrace();
                 }
-
-//                try {
-//                    // Create an ObjectInputStream to read objects from the server
-//                    //TODO oj denna hade jag redan?
-//                    //ObjectInputStream serverInputStream = new ObjectInputStream(socket.getInputStream());
-//
-//                    // Subscribe to the Observable on the io() scheduler for blocking I/O
-//                    Observable<Shape> serverDrawingEvents = Observable.create(emitter -> {
-//                        while (!emitter.isDisposed()) {
-//                            Shape receivedShape = (Shape) inputStream.readObject();
-//                            System.out.println("Received shape from server: " + receivedShape);
-//                            // Draw the received shape without emitting it as an event
-//                            drawReceivedShape(receivedShape);
-//                        }
-//                    });
-//
-//                    serverDrawingEvents
-//                            .observeOn(Schedulers.io())
-//                            .subscribe(
-//                                    shape -> {
-//                                        // This block will never be executed
-//                                        // because received shapes are drawn directly above
-//                                    },
-//                                    error -> {
-//                                        // Handle errors, e.g., communication or deserialization errors
-//                                        error.printStackTrace();
-//                                    }
-//                            );
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-
                 return null;
             }
         };
-
         worker.execute(); // Start the worker thread.
-
     }
 
-    private boolean shouldEmitShape(Shape shape) {
-        return false;
-    }
-
-    // denna via interface
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void drawReceivedShape(Shape shape) {
         SwingUtilities.invokeLater(() -> {
             drawing.addShape(shape);
@@ -147,10 +110,7 @@ public class Client implements ConnectionHandler, Serializable {
     // method to handle new shapes received from DrawingPanel
     public void sendShapeToServer(Shape shape) {
         try {
-
-            System.out.println("VA MEN VARFÖR SKICKAS DEN TILLBAKA???");
             outputStream.writeObject(shape);
-            System.out.println("Sent shape to the server: " + shape);
         } catch (Exception e) {
             e.printStackTrace();
         }

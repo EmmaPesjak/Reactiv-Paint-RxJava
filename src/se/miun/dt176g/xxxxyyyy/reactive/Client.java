@@ -66,11 +66,12 @@ public class Client implements ConnectionHandler, Serializable {
                     outputStream = new ObjectOutputStream(socket.getOutputStream());
                     inputStream = new ObjectInputStream(socket.getInputStream());
 
+
                     Observable<Shape> serverDrawingEvents = Observable.create(emitter -> {
                         while (!emitter.isDisposed()) {
-                            Shape receivedShape = (Shape) inputStream.readObject();
+                            Object receivedObject = inputStream.readObject();
                             // Draw the received shape without emitting it as an event
-                            drawReceivedShape(receivedShape);
+                            handleReceivedObject(receivedObject);
                         }
                     });
 
@@ -99,10 +100,14 @@ public class Client implements ConnectionHandler, Serializable {
      * {@inheritDoc}
      */
     @Override
-    public void drawReceivedShape(Shape shape) {
+    public void handleReceivedObject(Object receivedObject) {
         SwingUtilities.invokeLater(() -> {
-            drawing.addShape(shape);
-            drawingPanel.repaint();
+            if (receivedObject instanceof String) {  // HAHA SNYGGASTE LÖSNINGEN NÅGONSIN
+                drawingPanel.clearDrawing();
+            } else if (receivedObject instanceof Shape) {
+                drawing.addShape((Shape) receivedObject);
+                drawingPanel.repaint();
+            }
         });
     }
 
@@ -122,9 +127,10 @@ public class Client implements ConnectionHandler, Serializable {
     @Override
     public void clearEvent() {
         drawingPanel.clearDrawing();
-
-        System.out.println("should clear");
-
-        //TODO skicka till servern att vi ska cleara
+        try {
+            outputStream.writeObject("clear");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -15,10 +15,11 @@ public interface ConnectionHandler {
     void clearEvent();
 
     /**
-     * Draws a received shape on the canvas.
-     * @param shape is the Shape to be drawn.
+     * Receives an Object that can be a String for clearing the canvas or a
+     * Shape to draw on the canvas.
+     * @param receivedObject is the received object.
      */
-    void drawReceivedShape(Shape shape);
+    void handleReceivedObject(Object receivedObject);
 
     /**
      * Sets the MainFrame.

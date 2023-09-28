@@ -107,6 +107,7 @@ public class Server implements ConnectionHandler, Serializable {
 
     //TODO oj jag har ju glömt att klienter som connectar måste få allt som redan finns i drawingen! Läste något bra i boken om det någonstans
 
+
     private void handleIncomingConnection(Socket socket) {
 
         try {
@@ -120,32 +121,35 @@ public class Server implements ConnectionHandler, Serializable {
             ObjectInputStream clientInputStream = new ObjectInputStream(socket.getInputStream());
 
             // Create an Observable for incoming drawing events
-            Observable<Shape> clientDrawingEvents = Observable.create(emitter -> {
+            Observable<Object> clientDrawingEvents = Observable.create(emitter -> {
                 while (!emitter.isDisposed()) {
-                    Shape receivedShape = (Shape) clientInputStream.readObject();
+                    Object receivedObject = clientInputStream.readObject();
 
                     // Emit the received shape to subscribers
-                    emitter.onNext(receivedShape);
+                    emitter.onNext(receivedObject);
                 }
             });
 
+
+
+
             // Create an observer for this client
-            Observer<Shape> clientObserver = new Observer<Shape>() {
+            Observer<Object> clientObserver = new Observer<Object>() {
                 @Override
                 public void onSubscribe(Disposable d) {
                     // Nothing needed here
                 }
 
                 @Override
-                public void onNext(Shape shape) {
-                    drawReceivedShape(shape); // Draw the received shape.
+                public void onNext(Object object) {
+                    handleReceivedObject(object); // Draw the received shape.
                     // detta är ju nästan samma som sendShapeToClients(Shape shape) men jag behöver socket :(
                     for (Socket clientSocket : clientSockets) {
                         if (clientSocket != socket) {
                             ObjectOutputStream objectOutputStream = clientOutputStreams.get(clientSocket);
                             if (objectOutputStream != null) {
                                 try {
-                                    objectOutputStream.writeObject(shape);
+                                    objectOutputStream.writeObject(object);
                                     objectOutputStream.flush();
                                 } catch (IOException e) {
                                     e.printStackTrace();
@@ -181,10 +185,14 @@ public class Server implements ConnectionHandler, Serializable {
      * {@inheritDoc}
      */
     @Override
-    public void drawReceivedShape(Shape shape) {
+    public void handleReceivedObject(Object receivedObject) {
         SwingUtilities.invokeLater(() -> {
-            drawing.addShape(shape);
-            drawingPanel.repaint();
+            if (receivedObject instanceof String) {  // HAHA SNYGGASTE LÖSNINGEN NÅGONSIN
+                drawingPanel.clearDrawing();
+            } else if (receivedObject instanceof Shape) {
+                drawing.addShape((Shape) receivedObject);
+                drawingPanel.repaint();
+            }
         });
     }
 
@@ -231,6 +239,7 @@ public class Server implements ConnectionHandler, Serializable {
         }
     }
 
+
     /**
      * {@inheritDoc}
      */
@@ -238,9 +247,18 @@ public class Server implements ConnectionHandler, Serializable {
     public void clearEvent() {
         drawingPanel.clearDrawing();
 
-        System.out.println("should clear");
+        sendClearEventToClients();
+    }
 
-        // TODO skicka till clienten att vi ska cleara
+    public void sendClearEventToClients() {
+        for (ObjectOutputStream outputStream : clientOutputStreams.values()) {
+            try {
+                outputStream.writeObject("clear");
+                outputStream.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
 

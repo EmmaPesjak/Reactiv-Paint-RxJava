@@ -38,8 +38,7 @@ public class Server implements ConnectionHandler, Serializable {
     private final List<Socket> clientSockets = new ArrayList<>();
     private final CompositeDisposable disposables = new CompositeDisposable();
     private final Map<Socket, ObjectOutputStream> clientOutputStreams = new HashMap<>();
-    private List<Shape> sentShapes = new ArrayList<>();
-
+    
     /**
      * Constructor which sets the DrawingPanel and ServerSocket.
      */
@@ -88,9 +87,6 @@ public class Server implements ConnectionHandler, Serializable {
      * @param shape the Shape to send.
      */
     public void sendShapeToClients(Shape shape) {
-        sentShapes.add(shape);
-
-        System.out.println("shapes len when server draw: " +sentShapes.size());
         for (ObjectOutputStream outputStream : clientOutputStreams.values()) {
             try {
                 outputStream.writeObject(shape);
@@ -136,8 +132,8 @@ public class Server implements ConnectionHandler, Serializable {
                 Observer<Object> clientObserver = new Observer<Object>() {
                     @Override
                     public void onSubscribe(Disposable d) {
-                        // Iterate through sentShapes and send them to the new client
-                        for (Shape sentShape : sentShapes) {
+                        // Iterate through the Shapes in the drawing and send them to the new client
+                        for (Shape sentShape : drawing.getShapes()) {
                             try {
                                 clientOutputStream.writeObject(sentShape);
                                 clientOutputStream.flush();
@@ -155,7 +151,6 @@ public class Server implements ConnectionHandler, Serializable {
                                 ObjectOutputStream objectOutputStream = clientOutputStreams.get(clientSocket);
                                 if (objectOutputStream != null) {
                                     try {
-                                        //sentShapes.add((Shape) object); // ska/behöver denna vara här? nej
                                         objectOutputStream.writeObject(object);
                                         objectOutputStream.flush();
                                     } catch (IOException e) {
@@ -195,9 +190,7 @@ public class Server implements ConnectionHandler, Serializable {
             if (receivedObject instanceof String && receivedObject.equals("clear")) {
                 drawingPanel.clearDrawing();
                 sendClearEventToClients();
-                sentShapes.clear(); // Make sure to clear the sent shapes list.
             } else if (receivedObject instanceof Shape) {
-                sentShapes.add((Shape) receivedObject);
                 drawing.addShape((Shape) receivedObject);
                 drawingPanel.repaint();
             }
@@ -260,7 +253,6 @@ public class Server implements ConnectionHandler, Serializable {
     }
 
     public void sendClearEventToClients() {
-        sentShapes.clear(); // Make sure to clear the sent shapes list.
         for (ObjectOutputStream outputStream : clientOutputStreams.values()) {
             try {
                 outputStream.writeObject("clear");

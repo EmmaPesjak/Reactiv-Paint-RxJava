@@ -65,6 +65,7 @@ public class Server implements ConnectionHandler, Serializable {
         });
     }
 
+
     /**
      * {@inheritDoc}
      */
@@ -96,6 +97,7 @@ public class Server implements ConnectionHandler, Serializable {
         }
     }
 
+
     /***
      * Handle server socket errors, logs and displays an error message
      * @param e is the exception
@@ -107,88 +109,81 @@ public class Server implements ConnectionHandler, Serializable {
 
     //TODO oj jag har ju glömt att klienter som connectar måste få allt som redan finns i drawingen! Läste något bra i boken om det någonstans
 
-
     private void handleIncomingConnection(Socket socket) {
+        Thread clientThread = new Thread(() -> { // viktigt med trådar för att det ska fungera med multiple clienter.
+            try {
+                clientSockets.add(socket);
+                ObjectOutputStream clientOutputStream = new ObjectOutputStream(socket.getOutputStream());
+                clientOutputStreams.put(socket, clientOutputStream);
+                clientOutputStream.flush();
 
-        try {
-            clientSockets.add(socket);
-            ObjectOutputStream clientOutputStream = new ObjectOutputStream(socket.getOutputStream());
-            clientOutputStreams.put(socket, clientOutputStream); // Store the stream for this client
-            clientOutputStream.flush(); // Flush the output stream
+                ObjectInputStream clientInputStream = new ObjectInputStream(socket.getInputStream());
 
+                // Create an observable for incoming drawing events
+                Observable<Object> clientDrawingEvents = Observable.create(emitter -> {
+                    while (!emitter.isDisposed()) {
+                        Object receivedObject = clientInputStream.readObject();
 
-            // Create an ObjectInputStream to read objects from the client
-            ObjectInputStream clientInputStream = new ObjectInputStream(socket.getInputStream());
+                        // Emit the received object to subscribers
+                        emitter.onNext(receivedObject);
+                    }
+                });
 
-            // Create an Observable for incoming drawing events
-            Observable<Object> clientDrawingEvents = Observable.create(emitter -> {
-                while (!emitter.isDisposed()) {
-                    Object receivedObject = clientInputStream.readObject();
+                // Create an observer for this client
+                Observer<Object> clientObserver = new Observer<Object>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        // Nothing needed here
+                    }
 
-                    // Emit the received shape to subscribers
-                    emitter.onNext(receivedObject);
-                }
-            });
-
-
-
-
-            // Create an observer for this client
-            Observer<Object> clientObserver = new Observer<Object>() {
-                @Override
-                public void onSubscribe(Disposable d) {
-                    // Nothing needed here
-                }
-
-                @Override
-                public void onNext(Object object) {
-                    handleReceivedObject(object); // Draw the received shape.
-                    // detta är ju nästan samma som sendShapeToClients(Shape shape) men jag behöver socket :(
-                    for (Socket clientSocket : clientSockets) {
-                        if (clientSocket != socket) {
-                            ObjectOutputStream objectOutputStream = clientOutputStreams.get(clientSocket);
-                            if (objectOutputStream != null) {
-                                try {
-                                    objectOutputStream.writeObject(object);
-                                    objectOutputStream.flush();
-                                } catch (IOException e) {
-                                    e.printStackTrace();
+                    @Override
+                    public void onNext(Object object) {
+                        handleReceivedObject(object);
+                        for (Socket clientSocket : clientSockets) {
+                            if (clientSocket != socket) {
+                                ObjectOutputStream objectOutputStream = clientOutputStreams.get(clientSocket);
+                                if (objectOutputStream != null) {
+                                    try {
+                                        objectOutputStream.writeObject(object);
+                                        objectOutputStream.flush();
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                @Override
-                public void onError(Throwable e) {
-                    // Handle errors, if any
-                    e.printStackTrace();
-                }
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                    }
 
-                @Override
-                public void onComplete() {
-                    // Handle completion, if needed
-                }
-            };
+                    @Override
+                    public void onComplete() {
+                        // Handle completion, if needed
+                    }
+                };
 
-            // Subscribe this client's observer to the observable.
-            clientDrawingEvents
-                    .observeOn(Schedulers.io())
-                    .subscribe(clientObserver);
+                // Subscribe this client's observer to the observable
+                clientDrawingEvents
+                        .observeOn(Schedulers.io())
+                        .subscribe(clientObserver);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        clientThread.start();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+
     @Override
     public void handleReceivedObject(Object receivedObject) {
         SwingUtilities.invokeLater(() -> {
-            if (receivedObject instanceof String) {  // HAHA SNYGGASTE LÖSNINGEN NÅGONSIN
+            if (receivedObject instanceof String && receivedObject.equals("clear")) {
                 drawingPanel.clearDrawing();
+                sendClearEventToClients();
             } else if (receivedObject instanceof Shape) {
                 drawing.addShape((Shape) receivedObject);
                 drawingPanel.repaint();
@@ -204,15 +199,16 @@ public class Server implements ConnectionHandler, Serializable {
             try {
                 while (acceptConnections) {
                     Socket socket = serverSocket.accept();
-                    handleIncomingConnection(socket);
+
+                    // Create a new thread to handle the incoming client
+                    Thread clientThread = new Thread(() -> handleIncomingConnection(socket));
+                    clientThread.start();
                 }
             } catch (IOException e) {
-                //e.printStackTrace();
                 handleServerSocketError(e);
             }
         });
         serverThread.start();
-
     }
 
 
@@ -261,6 +257,7 @@ public class Server implements ConnectionHandler, Serializable {
         }
     }
 }
+
 
 // vad händer om någon DCar?
 // vad händer med clienten om servern DCar?

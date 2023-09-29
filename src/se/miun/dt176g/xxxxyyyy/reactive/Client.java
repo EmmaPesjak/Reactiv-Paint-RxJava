@@ -66,35 +66,24 @@ public class Client implements ConnectionHandler, Serializable {
                     outputStream = new ObjectOutputStream(socket.getOutputStream());
                     inputStream = new ObjectInputStream(socket.getInputStream());
 
-
-                    Observable<Shape> serverDrawingEvents = Observable.create(emitter -> {
-                        while (!emitter.isDisposed()) {
-                            Object receivedObject = inputStream.readObject();
-                            // Draw the received shape without emitting it as an event
-                            handleReceivedObject(receivedObject);
-                        }
-                    });
-
-                    // Handle errors, e.g., communication or deserialization errors
-                    serverDrawingEvents
-                            .observeOn(Schedulers.io())
-                            .subscribe(
-                                    shape -> {
-                                        // This block will never be executed
-                                        // because received shapes are drawn directly above
-                                    },
-                                    Throwable::printStackTrace
-                            );
+                    while (true) {
+                        Object receivedObject = inputStream.readObject();
+                        // Draw the received shape without emitting it as an event
+                        handleReceivedObject(receivedObject);
+                    }
 
                 } catch (IOException e) {
                     mainFrame.setUpFailedToConnect();
+                    e.printStackTrace();
+                } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
                 return null;
             }
         };
         worker.execute(); // Start the worker thread.
-    }
+
+}
 
     /**
      * {@inheritDoc}

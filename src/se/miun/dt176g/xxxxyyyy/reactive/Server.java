@@ -38,6 +38,7 @@ public class Server implements ConnectionHandler, Serializable {
     private final List<Socket> clientSockets = new ArrayList<>();
     private final CompositeDisposable disposables = new CompositeDisposable();
     private final Map<Socket, ObjectOutputStream> clientOutputStreams = new HashMap<>();
+    private List<Shape> sentShapes = new ArrayList<>();
 
     /**
      * Constructor which sets the DrawingPanel and ServerSocket.
@@ -87,16 +88,20 @@ public class Server implements ConnectionHandler, Serializable {
      * @param shape the Shape to send.
      */
     public void sendShapeToClients(Shape shape) {
+        sentShapes.add(shape);
+
+        System.out.println("shapes len when server draw: " +sentShapes.size());
         for (ObjectOutputStream outputStream : clientOutputStreams.values()) {
             try {
                 outputStream.writeObject(shape);
                 outputStream.flush(); // Essential to ensure that data is delivered promptly and consistently to its destination.
+
+
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
-
 
     /***
      * Handle server socket errors, logs and displays an error message
@@ -106,8 +111,6 @@ public class Server implements ConnectionHandler, Serializable {
         e.printStackTrace();
         mainFrame.setStatusMessage(Constants.FAIL_HOST_MSG);
     }
-
-    //TODO oj jag har ju glömt att klienter som connectar måste få allt som redan finns i drawingen! Läste något bra i boken om det någonstans
 
     private void handleIncomingConnection(Socket socket) {
         Thread clientThread = new Thread(() -> { // viktigt med trådar för att det ska fungera med multiple clienter.
@@ -133,7 +136,15 @@ public class Server implements ConnectionHandler, Serializable {
                 Observer<Object> clientObserver = new Observer<Object>() {
                     @Override
                     public void onSubscribe(Disposable d) {
-                        // Nothing needed here
+                        // Iterate through sentShapes and send them to the new client
+                        for (Shape sentShape : sentShapes) {
+                            try {
+                                clientOutputStream.writeObject(sentShape);
+                                clientOutputStream.flush();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
                     }
 
                     @Override
@@ -144,6 +155,7 @@ public class Server implements ConnectionHandler, Serializable {
                                 ObjectOutputStream objectOutputStream = clientOutputStreams.get(clientSocket);
                                 if (objectOutputStream != null) {
                                     try {
+                                        //sentShapes.add((Shape) object); // ska/behöver denna vara här? nej
                                         objectOutputStream.writeObject(object);
                                         objectOutputStream.flush();
                                     } catch (IOException e) {
@@ -173,7 +185,6 @@ public class Server implements ConnectionHandler, Serializable {
                 e.printStackTrace();
             }
         });
-
         clientThread.start();
     }
 
@@ -184,7 +195,9 @@ public class Server implements ConnectionHandler, Serializable {
             if (receivedObject instanceof String && receivedObject.equals("clear")) {
                 drawingPanel.clearDrawing();
                 sendClearEventToClients();
+                sentShapes.clear(); // Make sure to clear the sent shapes list.
             } else if (receivedObject instanceof Shape) {
+                sentShapes.add((Shape) receivedObject);
                 drawing.addShape((Shape) receivedObject);
                 drawingPanel.repaint();
             }
@@ -247,6 +260,7 @@ public class Server implements ConnectionHandler, Serializable {
     }
 
     public void sendClearEventToClients() {
+        sentShapes.clear(); // Make sure to clear the sent shapes list.
         for (ObjectOutputStream outputStream : clientOutputStreams.values()) {
             try {
                 outputStream.writeObject("clear");

@@ -8,10 +8,11 @@ import java.net.Socket;
 
 /**
  * <h1>Client</h1>
- * //Incoming connections(receiving drawing events/objects from others over the network)should be represented as Observables.
+ * Represents the client-side of the application,establishing a connection to the server and
+ * communicating with it. Sets up a client GUI.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-28
+ * @since 	2023-10-02
  */
 public class Client implements ConnectionHandler, Serializable {
     private Socket socket;

@@ -24,9 +24,10 @@ import java.util.Map;
 /**
  * <h1>Server</h1>
  * Represents the server-side of the application for handling incoming and outgoing connections/drawing events.
+ * The server also have it's own GUI.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-28
+ * @since 	2023-10-02
  */
 public class Server implements ConnectionHandler, Serializable, WindowListener {
 

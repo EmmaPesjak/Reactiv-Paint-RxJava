@@ -10,7 +10,7 @@ import java.util.List;
  * a list container.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-27
+ * @since 	2023-10-02
  */
 public class Drawing implements Drawable, Serializable {
 	private static final long serialVersionUID = 1L;

@@ -5,7 +5,7 @@ package se.miun.dt176g.xxxxyyyy.reactive.support;
  * Interface that define constant values.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-19
+ * @since 	2023-10-02
  */
 public interface Constants {
     String TITLE = "Reactive Paint";

@@ -15,7 +15,7 @@ public interface ConnectionHandler {
     void clearEvent();
 
     /**
-     * Receives an Object that can be a String for clearing the canvas or a
+     * Receives an Object that can be a String for clearing the canvas, that the Server has disconnected, or a
      * Shape to draw on the canvas.
      * @param receivedObject is the received object.
      */

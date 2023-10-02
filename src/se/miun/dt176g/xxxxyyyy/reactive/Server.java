@@ -1,13 +1,15 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
+import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Observer;
-import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import se.miun.dt176g.xxxxyyyy.reactive.support.Constants;
 
 import javax.swing.*;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -26,7 +28,7 @@ import java.util.Map;
  * @version 1.0
  * @since 	2023-09-28
  */
-public class Server implements ConnectionHandler, Serializable {
+public class Server implements ConnectionHandler, Serializable, WindowListener {
 
     private final Drawing drawing = new Drawing();
     private MainFrame mainFrame;
@@ -36,9 +38,8 @@ public class Server implements ConnectionHandler, Serializable {
     public static Menu menu = new Menu();
     private static final long serialVersionUID = 1L;
     private final List<Socket> clientSockets = new ArrayList<>();
-    private final CompositeDisposable disposables = new CompositeDisposable();
     private final Map<Socket, ObjectOutputStream> clientOutputStreams = new HashMap<>();
-    
+
     /**
      * Constructor which sets the DrawingPanel and ServerSocket.
      */
@@ -58,13 +59,12 @@ public class Server implements ConnectionHandler, Serializable {
     public static void main(String[] args) {
         Server server = new Server(); // Create an instance of Server.
         SwingUtilities.invokeLater(() -> {
-            MainFrame frame = new MainFrame(server, menu); // Pass the server instance to MainFrame
+            MainFrame frame = new MainFrame(server, menu); // Pass the server instance to MainFrame.
             frame.setVisible(true);
             server.setMainFrame(frame);
             server.startServer();
         });
     }
-
 
     /**
      * {@inheritDoc}
@@ -75,11 +75,24 @@ public class Server implements ConnectionHandler, Serializable {
     }
 
     /**
-     * Getter for the server's DrawingPanel.
-     * @return the DrawingPanel.
+     * Starts the server by accepting incoming connections in a separate thread.
      */
-    public DrawingPanel getDrawingPanel() {
-        return drawingPanel;
+    public void startServer() {
+        mainFrame.addWindowListener(this);
+        Thread serverThread = new Thread(() -> {
+            try {
+                while (acceptConnections) {
+                    Socket socket = serverSocket.accept();
+
+                    // Create a new thread to handle the incoming client.
+                    Thread clientThread = new Thread(() -> handleIncomingConnection(socket));
+                    clientThread.start();
+                }
+            } catch (IOException e) {
+                handleServerSocketError(e);
+            }
+        });
+        serverThread.start();
     }
 
     /**
@@ -91,25 +104,21 @@ public class Server implements ConnectionHandler, Serializable {
             try {
                 outputStream.writeObject(shape);
                 outputStream.flush(); // Essential to ensure that data is delivered promptly and consistently to its destination.
-
-
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    /***
-     * Handle server socket errors, logs and displays an error message
-     * @param e is the exception
+    /**
+     * Handles an incoming connection from a client.
+     * This method sets up communication with the new client, including creating
+     * input and output streams, and establishing an observable for incoming
+     * drawing events. It also sends existing drawing shapes to the new client.
+     * @param socket is the socket representing the client connection.
      */
-    private void handleServerSocketError(IOException e) {
-        e.printStackTrace();
-        mainFrame.setStatusMessage(Constants.FAIL_HOST_MSG);
-    }
-
     private void handleIncomingConnection(Socket socket) {
-        Thread clientThread = new Thread(() -> { // viktigt med trådar för att det ska fungera med multiple clienter.
+        Thread clientThread = new Thread(() -> {
             try {
                 clientSockets.add(socket);
                 ObjectOutputStream clientOutputStream = new ObjectOutputStream(socket.getOutputStream());
@@ -118,21 +127,21 @@ public class Server implements ConnectionHandler, Serializable {
 
                 ObjectInputStream clientInputStream = new ObjectInputStream(socket.getInputStream());
 
-                // Create an observable for incoming drawing events
+                // Create an observable for incoming drawing events.
                 Observable<Object> clientDrawingEvents = Observable.create(emitter -> {
                     while (!emitter.isDisposed()) {
                         Object receivedObject = clientInputStream.readObject();
 
-                        // Emit the received object to subscribers
+                        // Emit the received object to subscribers.
                         emitter.onNext(receivedObject);
                     }
                 });
 
-                // Create an observer for this client
+                // Create an observer for this client.
                 Observer<Object> clientObserver = new Observer<Object>() {
                     @Override
-                    public void onSubscribe(Disposable d) {
-                        // Iterate through the Shapes in the drawing and send them to the new client
+                    public void onSubscribe(@NonNull Disposable d) {
+                        // Iterate through the already drawn Shapes in the drawing and send them to the new client.
                         for (Shape sentShape : drawing.getShapes()) {
                             try {
                                 clientOutputStream.writeObject(sentShape);
@@ -144,8 +153,9 @@ public class Server implements ConnectionHandler, Serializable {
                     }
 
                     @Override
-                    public void onNext(Object object) {
+                    public void onNext(@NonNull Object object) {
                         handleReceivedObject(object);
+                        // Iterate over the clients and send.
                         for (Socket clientSocket : clientSockets) {
                             if (clientSocket != socket) {
                                 ObjectOutputStream objectOutputStream = clientOutputStreams.get(clientSocket);
@@ -168,11 +178,11 @@ public class Server implements ConnectionHandler, Serializable {
 
                     @Override
                     public void onComplete() {
-                        // Handle completion, if needed
+
                     }
                 };
 
-                // Subscribe this client's observer to the observable
+                // Subscribe this client's observer to the observable.
                 clientDrawingEvents
                         .observeOn(Schedulers.io())
                         .subscribe(clientObserver);
@@ -183,7 +193,17 @@ public class Server implements ConnectionHandler, Serializable {
         clientThread.start();
     }
 
+    /**
+     * Getter for the server's DrawingPanel.
+     * @return the DrawingPanel.
+     */
+    public DrawingPanel getDrawingPanel() {
+        return drawingPanel;
+    }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void handleReceivedObject(Object receivedObject) {
         SwingUtilities.invokeLater(() -> {
@@ -197,50 +217,14 @@ public class Server implements ConnectionHandler, Serializable {
         });
     }
 
-    /**
-     * Starts the server by accepting incoming connections in a separate thread.
+    /***
+     * Handle server socket errors, logs and displays an error message
+     * @param e is the exception
      */
-    public void startServer() {
-        Thread serverThread = new Thread(() -> {
-            try {
-                while (acceptConnections) {
-                    Socket socket = serverSocket.accept();
-
-                    // Create a new thread to handle the incoming client
-                    Thread clientThread = new Thread(() -> handleIncomingConnection(socket));
-                    clientThread.start();
-                }
-            } catch (IOException e) {
-                handleServerSocketError(e);
-            }
-        });
-        serverThread.start();
+    private void handleServerSocketError(IOException e) {
+        e.printStackTrace();
+        mainFrame.setStatusMessage(Constants.FAIL_HOST_MSG);
     }
-
-
-    //TODO måste använda dessa någonstans
-    /**
-     * Shuts down the server, stopping it from accepting new connections.
-     */
-    private void shutdown() {
-        acceptConnections = false;
-    }
-
-    /**
-     * Stops the server, disposing of all resources including RxJava disposables.
-     */
-    public void stop() {
-        acceptConnections = false;
-        disposables.dispose(); // Dispose of all RxJava resources
-
-        // Close serverSocket and other resources
-        try {
-            serverSocket.close();
-        } catch (IOException e) {
-            handleServerSocketError(e);
-        }
-    }
-
 
     /**
      * {@inheritDoc}
@@ -248,10 +232,13 @@ public class Server implements ConnectionHandler, Serializable {
     @Override
     public void clearEvent() {
         drawingPanel.clearDrawing();
-
         sendClearEventToClients();
     }
 
+    /**
+     * Method to notify all connected clients that the drawing
+     * should be cleared.
+     */
     public void sendClearEventToClients() {
         for (ObjectOutputStream outputStream : clientOutputStreams.values()) {
             try {
@@ -262,28 +249,94 @@ public class Server implements ConnectionHandler, Serializable {
             }
         }
     }
+
+    /**
+     * Stops the server, disposing of all resources.
+     */
+    public void shutDown() {
+        acceptConnections = false;
+
+        // Notify connected clients about server shutdown.
+        for (ObjectOutputStream outputStream : clientOutputStreams.values()) {
+            try {
+                outputStream.writeObject("server_shutdown");
+                outputStream.flush();
+                outputStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Close all client sockets.
+        for (Socket clientSocket : clientSockets) {
+            try {
+                clientSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Close the serverSocket.
+        try {
+            serverSocket.close();
+        } catch (IOException e) {
+            handleServerSocketError(e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void windowOpened(WindowEvent e) {
+        // Not needed.
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void windowClosing(WindowEvent e) {
+        shutDown();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void windowClosed(WindowEvent e) {
+        // Not needed.
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void windowIconified(WindowEvent e) {
+        // Not needed.
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void windowDeiconified(WindowEvent e) {
+        // Not needed.
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void windowActivated(WindowEvent e) {
+        // Not needed.
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void windowDeactivated(WindowEvent e) {
+        // Not needed.
+    }
 }
-
-
-// vad händer om någon DCar?
-// vad händer med clienten om servern DCar?
-// stänga sockets och observables?
-// vad händer vid error?
-
-//onNext
-//onError
-//onComplete
-
-
-// Kap 5 learning rxJava om multicasting tar upp mycket bra om hur man ska kunna skicka så alla observers får all info typ samtidigt och i bra ordning.
-// Kap 6 s189 Using observeOn() for UI event threads
-// "The visual updating of user interfaces is often done by a single dedicated UI
-//thread, and changes to the user interface must be done on that thread. User input events are
-//typically fired on the UI thread as well. If a user input triggers work, and that work is not
-//moved to another thread, that UI thread becomes busy. This is what makes the user
-//interface unresponsive, and today's users expect better than this. They want to continue
-//interacting with the application while work is happening in the background, so
-//concurrency is a must-have.
-//Thankfully, RxJava comes to the rescue! You can use observeOn() to move UI events to a
-//computation or I/O Scheduler to do the work, and when the result is ready, move it back
-//to the UI thread with another observeOn()."

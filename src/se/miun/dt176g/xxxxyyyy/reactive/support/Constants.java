@@ -17,6 +17,7 @@ public interface Constants {
     String FAIL_CONNECT_MSG = "Failed to connect to a server, make sure one is running.";
     String FAIL_HOST_MSG = "Failed to host the server. Try again";
     String SERVER = "You are running the server";
+    String SERVER_DC = "The server has disconnected, make sure a server is running and then restart.";
 
     String ADDRESS = "localhost";
     int PORT = 12345;

@@ -1,7 +1,5 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 import se.miun.dt176g.xxxxyyyy.reactive.support.Constants;
 
 import javax.swing.*;
@@ -46,9 +44,11 @@ public class Client implements ConnectionHandler, Serializable {
         this.mainFrame = frame;
     }
 
+    /**
+     * Establishes a connection to the server and sets up communication with it.
+     */
     public void connectToServer() {
         client = this;
-
         // Create a worker thread to avoid blocking the Swing EDT.
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
             @Override
@@ -68,7 +68,6 @@ public class Client implements ConnectionHandler, Serializable {
 
                     while (true) {
                         Object receivedObject = inputStream.readObject();
-                        // Draw the received shape without emitting it as an event
                         handleReceivedObject(receivedObject);
                     }
 
@@ -82,7 +81,6 @@ public class Client implements ConnectionHandler, Serializable {
             }
         };
         worker.execute(); // Start the worker thread.
-
 }
 
     /**
@@ -91,8 +89,21 @@ public class Client implements ConnectionHandler, Serializable {
     @Override
     public void handleReceivedObject(Object receivedObject) {
         SwingUtilities.invokeLater(() -> {
-            if (receivedObject instanceof String) {  // HAHA SNYGGASTE LÖSNINGEN NÅGONSIN
-                drawingPanel.clearDrawing();
+            if (receivedObject instanceof String) {
+                String message = (String) receivedObject;
+                if (message.equals("clear")) {
+                    drawingPanel.clearDrawing();
+                } else if (message.equals("server_shutdown")) {
+                    // Handle the server shutdown.
+                    mainFrame.setStatusMessage(Constants.SERVER_DC);
+                    try {
+                        socket.close();
+                        inputStream.close();
+                        outputStream.close();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
             } else if (receivedObject instanceof Shape) {
                 drawing.addShape((Shape) receivedObject);
                 drawingPanel.repaint();
@@ -100,8 +111,10 @@ public class Client implements ConnectionHandler, Serializable {
         });
     }
 
-    // HÄR FÅR JAG FAN IN SHAPEN NÄR DEN RITAS!!
-    // method to handle new shapes received from DrawingPanel
+    /**
+     * Sends a Shape to the server over the network connection.
+     * @param shape is the Shape to send to the server.
+     */
     public void sendShapeToServer(Shape shape) {
         try {
             outputStream.writeObject(shape);

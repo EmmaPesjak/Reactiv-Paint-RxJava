@@ -34,7 +34,7 @@ public class Drawing implements Drawable, Serializable {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void addShape(Shape shape) {
+	public synchronized void addShape(Shape shape) { // Synchronized to avoid concurrency issues!
 		if (shape != null) {
 			shapes.add(shape);
 		}
@@ -44,7 +44,7 @@ public class Drawing implements Drawable, Serializable {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public List<Shape> getShapes() {
+	public synchronized List<Shape> getShapes() { // Synchronized to avoid concurrency issues!
 		return shapes;
 	}
 }

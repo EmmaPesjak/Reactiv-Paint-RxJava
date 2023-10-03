@@ -27,7 +27,7 @@ import java.util.Map;
  * The server also have it's own GUI.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-10-02
+ * @since 	2023-10-03
  */
 public class Server implements ConnectionHandler, Serializable, WindowListener {
 
@@ -139,7 +139,7 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
                 });
 
                 // Create an observer for this client.
-                Observer<Object> clientObserver = new Observer<Object>() {
+                Observer<Object> clientObserver = new Observer<>() {
                     @Override
                     public void onSubscribe(@NonNull Disposable d) {
                         // Iterate through the already drawn Shapes in the drawing and send them to the new client.
@@ -155,19 +155,27 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
 
                     @Override
                     public void onNext(@NonNull Object object) {
+
                         handleReceivedObject(object);
-                        // Iterate over the clients and send.
-                        for (Socket clientSocket : clientSockets) {
-                            if (clientSocket != socket) {
-                                ObjectOutputStream objectOutputStream = clientOutputStreams.get(clientSocket);
-                                if (objectOutputStream != null) {
-                                    try {
-                                        objectOutputStream.writeObject(object);
-                                        objectOutputStream.flush();
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
-                                    }
+
+                        if (object instanceof String && object.equals("client_shutdown")) {
+                            try {
+                                // Remove the socket from the lists.
+                                clientSockets.remove(socket);
+                                clientOutputStreams.remove(socket);
+
+                                // Close the socket.
+                                socket.close();
+
+                                // Close the associated output stream if it exists.
+                                ObjectOutputStream outputStream = clientOutputStreams.get(socket);
+                                if (outputStream != null) {
+                                    outputStream.close();
                                 }
+
+
+                            } catch (IOException e) {
+                                e.printStackTrace();
                             }
                         }
                     }
@@ -211,9 +219,12 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
             if (receivedObject instanceof String && receivedObject.equals("clear")) {
                 drawingPanel.clearDrawing();
                 sendClearEventToClients();
+            } else if (receivedObject instanceof String && receivedObject.equals("client_shutdown")) {
+
             } else if (receivedObject instanceof Shape) {
                 drawing.addShape((Shape) receivedObject);
                 drawingPanel.repaint();
+                sendShapeToClients((Shape) receivedObject);
             }
         });
     }
@@ -252,8 +263,9 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
     }
 
     /**
-     * Stops the server, disposing of all resources.
+     * {@inheritDoc}
      */
+    @Override
     public void shutDown() {
         acceptConnections = false;
 

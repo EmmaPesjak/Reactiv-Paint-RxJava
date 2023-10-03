@@ -5,7 +5,7 @@ package se.miun.dt176g.xxxxyyyy.reactive;
  * Interface for server/clients.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-28
+ * @since 	2023-10-03
  */
 public interface ConnectionHandler {
 
@@ -26,4 +26,9 @@ public interface ConnectionHandler {
      * @param mainFrame is the MainFrame.
      */
     void setMainFrame(MainFrame mainFrame);
+
+    /**
+     * Handles shutdown gracefully, disposing recourses.
+     */
+    void shutDown();
 }

@@ -1,8 +1,15 @@
 package se.miun.dt176g.xxxxyyyy.reactive;
 
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Observer;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import se.miun.dt176g.xxxxyyyy.reactive.support.Constants;
 
 import javax.swing.*;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.io.*;
 import java.net.Socket;
 
@@ -12,9 +19,9 @@ import java.net.Socket;
  * communicating with it. Sets up a client GUI.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-10-02
+ * @since 	2023-10-03
  */
-public class Client implements ConnectionHandler, Serializable {
+public class Client implements ConnectionHandler, Serializable, WindowListener {
     private Socket socket;
     private MainFrame mainFrame;
     private static final Menu menu = new Menu();
@@ -24,6 +31,9 @@ public class Client implements ConnectionHandler, Serializable {
     private static final long serialVersionUID = 1L;
     private Drawing drawing;
     private Client client;
+    private Observable<Object> incomingDataObservable;
+    private Observer<Object> outgoingDataObserver;
+    private boolean shouldTerminateIncomingDataObservable = false;
 
     /**
      * Main starting point of the application for a client.
@@ -57,9 +67,9 @@ public class Client implements ConnectionHandler, Serializable {
                 try {
                     socket = new Socket(Constants.ADDRESS, Constants.PORT);
 
+                    // Set up the frame.
                     drawing = new Drawing();
                     drawingPanel = new DrawingPanel(drawing, menu, client);
-
                     mainFrame.setUpDrawing(drawingPanel);
                     mainFrame.setStatusMessage(Constants.CLIENT_CONNECT_MSG);
 
@@ -67,22 +77,79 @@ public class Client implements ConnectionHandler, Serializable {
                     outputStream = new ObjectOutputStream(socket.getOutputStream());
                     inputStream = new ObjectInputStream(socket.getInputStream());
 
-                    while (true) {
-                        Object receivedObject = inputStream.readObject();
-                        handleReceivedObject(receivedObject);
-                    }
-
+                    // Set up observer/observables.
+                    incomingDataObservable = createIncomingDataObservable();
+                    outgoingDataObserver = createOutgoingDataObserver();
+                    subscribeToIncomingData();
                 } catch (IOException e) {
                     mainFrame.setUpFailedToConnect();
-                    e.printStackTrace();
-                } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
                 return null;
             }
         };
         worker.execute(); // Start the worker thread.
-}
+    }
+
+    /**
+     * Subscribes to the incoming data observable to asynchronously handle received objects.
+     */
+    private void subscribeToIncomingData() {
+        incomingDataObservable.subscribe(
+                this::handleReceivedObject,
+                Throwable::printStackTrace
+        );
+    }
+
+    /**
+     * Creates an observable for incoming data from the input stream, that continuously reads objects
+     * from the input stream.
+     * @return an observable for incoming data.
+     */
+    private Observable<Object> createIncomingDataObservable() {
+        return Observable.create(emitter -> {
+                    try {
+                        while (!shouldTerminateIncomingDataObservable) {
+                            Object receivedObject = inputStream.readObject();
+                            emitter.onNext(receivedObject);
+                        }
+                    } catch (IOException | ClassNotFoundException e) {
+                        e.printStackTrace();
+                    } finally {
+                        emitter.onComplete(); // Signal completion when the loop terminates.
+                    }
+                })
+                .subscribeOn(Schedulers.io());
+    }
+
+    /**
+     * Creates an observer for outgoing data to send objects over the network connection.
+     * @return an observer for outgoing data.
+     */
+    private Observer<Object> createOutgoingDataObserver() {
+        return new Observer<>() {
+            @Override
+            public void onSubscribe(@NonNull Disposable d) {}
+
+            @Override
+            public void onNext(@NonNull Object object) {
+                try {
+                    outputStream.writeObject(object);
+                    outputStream.flush();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onError(@NonNull Throwable e) {
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onComplete() {}
+        };
+    }
 
     /**
      * {@inheritDoc}
@@ -95,7 +162,6 @@ public class Client implements ConnectionHandler, Serializable {
                 if (message.equals("clear")) {
                     drawingPanel.clearDrawing();
                 } else if (message.equals("server_shutdown")) {
-                    // Handle the server shutdown.
                     mainFrame.setStatusMessage(Constants.SERVER_DC);
                     try {
                         socket.close();
@@ -113,15 +179,11 @@ public class Client implements ConnectionHandler, Serializable {
     }
 
     /**
-     * Sends a Shape to the server over the network connection.
+     * Sends a Shape object to the server using the outgoing data observer.
      * @param shape is the Shape to send to the server.
      */
     public void sendShapeToServer(Shape shape) {
-        try {
-            outputStream.writeObject(shape);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        outgoingDataObserver.onNext(shape);
     }
 
     /**
@@ -135,5 +197,80 @@ public class Client implements ConnectionHandler, Serializable {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void shutDown() {
+        try {
+            outputStream.writeObject("client_shutdown");
+            outputStream.flush();
+
+            socket.close();
+            inputStream.close();
+            outputStream.close();
+            outgoingDataObserver.onComplete();
+            shouldTerminateIncomingDataObservable = true; // Signal that the incoming data observable should terminate.
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void windowOpened(WindowEvent e) {
+        // Not needed.
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void windowClosing(WindowEvent e) {
+        shutDown();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void windowClosed(WindowEvent e) {
+        // Not needed.
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void windowIconified(WindowEvent e) {
+        // Not needed.
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void windowDeiconified(WindowEvent e) {
+        // Not needed.
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void windowActivated(WindowEvent e) {
+        // Not needed.
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void windowDeactivated(WindowEvent e) {
+        // Not needed.
     }
 }

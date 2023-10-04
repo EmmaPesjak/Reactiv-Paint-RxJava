@@ -29,7 +29,7 @@ import java.util.Map;
  * The server also have it's own GUI.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-10-03
+ * @since 	2023-10-04
  */
 public class Server implements ConnectionHandler, Serializable, WindowListener {
     private final Drawing drawing = new Drawing();

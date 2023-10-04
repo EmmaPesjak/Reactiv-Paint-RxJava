@@ -20,7 +20,7 @@ import java.net.SocketException;
  * communicating with it. Sets up a client GUI.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-10-03
+ * @since 	2023-10-04
  */
 public class Client implements ConnectionHandler, Serializable, WindowListener {
     private Socket socket;
@@ -171,7 +171,9 @@ public class Client implements ConnectionHandler, Serializable, WindowListener {
                 if (message.equals("clear")) {
                     drawingPanel.clearDrawing();
                 } else if (message.equals("server_shutdown")) {
+                    mainFrame.removeDrawing();
                     mainFrame.setStatusMessage(Constants.SERVER_DC);
+
                     try {
                         socket.close();
                         inputStream.close();

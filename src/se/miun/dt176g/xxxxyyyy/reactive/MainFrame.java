@@ -10,7 +10,7 @@ import javax.swing.*;
  * JFrame for the application's GUI.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-27
+ * @since 	2023-10-04
  */
 @SuppressWarnings("serial")
 public class MainFrame extends JFrame {
@@ -127,5 +127,12 @@ public class MainFrame extends JFrame {
 		// Add an ActionListener to the button for handling the connection to the server.
 		connectButton.addActionListener(e -> connectToServerAndGetDrawing());
 		contentPanel.add(connectButton, BorderLayout.SOUTH);
+	}
+
+	/**
+	 * Method that removes the drawingPanel, used when the server disconnects.
+	 */
+	public void removeDrawing() {
+		contentPanel.removeAll();
 	}
 }

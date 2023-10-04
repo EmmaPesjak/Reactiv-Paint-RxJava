@@ -5,6 +5,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 import se.miun.dt176g.xxxxyyyy.reactive.support.Constants;
 
 import javax.swing.*;
@@ -21,9 +22,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 /**
  * <h1>Server</h1>
@@ -34,7 +32,6 @@ import java.util.concurrent.TimeUnit;
  * @since 	2023-10-03
  */
 public class Server implements ConnectionHandler, Serializable, WindowListener {
-
     private final Drawing drawing = new Drawing();
     private MainFrame mainFrame;
     private ServerSocket serverSocket;
@@ -45,6 +42,8 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
     private final List<Socket> clientSockets = new ArrayList<>();
     private final Map<Socket, ObjectOutputStream> clientOutputStreams = new HashMap<>();
     private final List<Thread> clientThreads = new ArrayList<>();
+    private final PublishSubject<Object> outgoingDataObserver = PublishSubject.create();
+    private final Map<Socket, Observable<Object>> clientObservables = new HashMap<>();
 
     /**
      * Constructor which sets the DrawingPanel and ServerSocket.
@@ -53,6 +52,18 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
         try {
             drawingPanel = new DrawingPanel(drawing, menu, this);
             serverSocket = new ServerSocket(Constants.PORT);
+
+            // Subscribe outgoingDataObserver to send data to clients
+            outgoingDataObserver.subscribe(o -> {
+                for (ObjectOutputStream outputStream : clientOutputStreams.values()) {
+                    try {
+                        outputStream.writeObject(o);
+                        outputStream.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
         } catch (IOException e) {
             handleServerSocketError(e);
         }
@@ -63,8 +74,8 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
      * @param args not applicable here.
      */
     public static void main(String[] args) {
-        Server server = new Server(); // Create an instance of Server.
         SwingUtilities.invokeLater(() -> {
+            Server server = new Server(); // Create an instance of Server.
             MainFrame frame = new MainFrame(server, menu); // Pass the server instance to MainFrame.
             frame.setVisible(true);
             server.setMainFrame(frame);
@@ -85,19 +96,25 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
      */
     public void startServer() {
         mainFrame.addWindowListener(this);
-        Thread serverThread = new Thread(() -> {
-            try {
-                while (acceptConnections) {
-                    Socket socket = serverSocket.accept();
-                    Thread clientThread = new Thread(() -> handleIncomingConnection(socket));
-                    clientThreads.add(clientThread);
-                    clientThread.start();
-                }
-            } catch (IOException e) {
-                handleServerSocketError(e);
-            }
-        });
-        serverThread.start();
+        Observable.create(emitter -> {
+                    while (acceptConnections) {
+                        try {
+                            Socket socket = serverSocket.accept();
+                            Thread clientThread = new Thread(() -> handleIncomingConnection(socket));
+                            clientThreads.add(clientThread);
+                            clientThread.start();
+                        } catch (IOException e) {
+                            emitter.onError(e);
+                            break;
+                        } 
+                    }
+                })
+                .subscribeOn(Schedulers.io()) // Ensure this runs on a background thread.
+                .subscribe(
+                        value -> {
+                        },
+                        Throwable::printStackTrace
+                );
     }
 
     /**
@@ -105,14 +122,7 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
      * @param shape the Shape to send.
      */
     public void sendShapeToClients(Shape shape) {
-        for (ObjectOutputStream outputStream : clientOutputStreams.values()) {
-            try {
-                outputStream.writeObject(shape);
-                outputStream.flush(); // Essential to ensure that data is delivered promptly and consistently to its destination.
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        outgoingDataObserver.onNext(shape);
     }
 
     /**
@@ -140,23 +150,19 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
                         // Emit the received object to subscribers.
                         emitter.onNext(receivedObject);
                     } catch (SocketException e) {
-                        // Handle client disconnect.
-                        clientSockets.remove(socket);
-                        clientOutputStreams.remove(socket);
-                        try {
-                            clientInputStream.close();
-                            clientOutputStream.close();
-                            socket.close();
-                        } catch (IOException ex) {
-                            ex.printStackTrace();
-                        }
+                        handleClientDisconnect(socket);
+                        clientInputStream.close();
+                        emitter.onComplete();
                         // Break out of the loop to terminate this client thread.
                         break;
                     } catch (IOException | ClassNotFoundException e) {
                         e.printStackTrace();
                     }
                 }
-            });
+            }).subscribeOn(Schedulers.io()); // Offload to the io scheduler.
+
+            // Store the observable in the map for future reference.
+            clientObservables.put(socket, clientDrawingEvents);
 
             // Create an observer for this client.
             Observer<Object> clientObserver = new Observer<>() {
@@ -177,17 +183,12 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
                 public void onNext(@NonNull Object object) {
                     handleReceivedObject(object);
                     if (object instanceof String && object.equals("client_shutdown")) {
-                        try {
-                            // Remove the socket from the lists.
-                            clientSockets.remove(socket);
-                            clientOutputStreams.remove(socket);
 
-                            // Close the socket.
+                        handleClientDisconnect(socket);
+                        try {
                             clientInputStream.close();
-                            clientOutputStream.close();
-                            socket.close();
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            throw new RuntimeException(e);
                         }
                     }
                 }
@@ -202,7 +203,6 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
 
                 }
             };
-
             // Subscribe this client's observer to the observable.
             clientDrawingEvents
                     .observeOn(Schedulers.io())
@@ -228,13 +228,33 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
         SwingUtilities.invokeLater(() -> {
             if (receivedObject instanceof String && receivedObject.equals("clear")) {
                 drawingPanel.clearDrawing();
-                sendClearEventToClients();
+                outgoingDataObserver.onNext("clear");
             } else if (receivedObject instanceof Shape) {
                 drawing.addShape((Shape) receivedObject);
                 drawingPanel.repaint();
                 sendShapeToClients((Shape) receivedObject);
             }
         });
+    }
+
+    /**
+     * Handles the disconnection of a client from the server, cleans up resources.
+     * @param socket is the socket representing the disconnected client.
+     */
+    private void handleClientDisconnect(Socket socket) {
+        clientSockets.remove(socket);
+        clientOutputStreams.remove(socket);
+
+        Observable<Object> clientObservable = clientObservables.get(socket);
+        if (clientObservable != null) {
+            clientObservables.remove(socket);
+        }
+
+        try {
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /***
@@ -252,22 +272,7 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
     @Override
     public void clearEvent() {
         drawingPanel.clearDrawing();
-        sendClearEventToClients();
-    }
-
-    /**
-     * Method to notify all connected clients that the drawing
-     * should be cleared.
-     */
-    public void sendClearEventToClients() {
-        for (ObjectOutputStream outputStream : clientOutputStreams.values()) {
-            try {
-                outputStream.writeObject("clear");
-                outputStream.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        outgoingDataObserver.onNext("clear");
     }
 
     /**
@@ -287,6 +292,8 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
                 e.printStackTrace();
             }
         }
+
+        outgoingDataObserver.onComplete();
 
         // Stop all client threads.
         for (Thread clientThread : clientThreads) {

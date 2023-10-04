@@ -116,7 +116,9 @@ public class Client implements ConnectionHandler, Serializable, WindowListener {
                     } catch (IOException | ClassNotFoundException e) {
                         e.printStackTrace();
                     } finally {
-                        emitter.onComplete(); // Signal completion when the loop terminates.
+                        if (!emitter.isDisposed()) {
+                            emitter.onComplete(); // Signal completion when the loop terminates.
+                        }
                     }
                 })
                 .subscribeOn(Schedulers.io());
@@ -208,13 +210,18 @@ public class Client implements ConnectionHandler, Serializable, WindowListener {
             outputStream.writeObject("client_shutdown");
             outputStream.flush();
 
+            // Set the flag to terminate the incoming data observable.
+            shouldTerminateIncomingDataObservable = true;
+
+            // Close the socket and the associated streams.
             socket.close();
-            inputStream.close();
             outputStream.close();
+            inputStream.close();
+
+            // Notify the observer to complete.
             outgoingDataObserver.onComplete();
-            shouldTerminateIncomingDataObservable = true; // Signal that the incoming data observable should terminate.
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
         }
     }
 

@@ -16,10 +16,14 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <h1>Server</h1>
@@ -40,6 +44,7 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
     private static final long serialVersionUID = 1L;
     private final List<Socket> clientSockets = new ArrayList<>();
     private final Map<Socket, ObjectOutputStream> clientOutputStreams = new HashMap<>();
+    private final List<Thread> clientThreads = new ArrayList<>();
 
     /**
      * Constructor which sets the DrawingPanel and ServerSocket.
@@ -84,9 +89,8 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
             try {
                 while (acceptConnections) {
                     Socket socket = serverSocket.accept();
-
-                    // Create a new thread to handle the incoming client.
                     Thread clientThread = new Thread(() -> handleIncomingConnection(socket));
+                    clientThreads.add(clientThread);
                     clientThread.start();
                 }
             } catch (IOException e) {
@@ -97,7 +101,7 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
     }
 
     /**
-     * Sends a Shape to all connected clients, used when the Server is drawing.
+     * Sends a Shape to all connected clients.
      * @param shape the Shape to send.
      */
     public void sendShapeToClients(Shape shape) {
@@ -119,87 +123,93 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
      * @param socket is the socket representing the client connection.
      */
     private void handleIncomingConnection(Socket socket) {
-        Thread clientThread = new Thread(() -> {
-            try {
-                clientSockets.add(socket);
-                ObjectOutputStream clientOutputStream = new ObjectOutputStream(socket.getOutputStream());
-                clientOutputStreams.put(socket, clientOutputStream);
-                clientOutputStream.flush();
+        try {
+            clientSockets.add(socket);
+            ObjectOutputStream clientOutputStream = new ObjectOutputStream(socket.getOutputStream());
+            clientOutputStreams.put(socket, clientOutputStream);
+            clientOutputStream.flush();
 
-                ObjectInputStream clientInputStream = new ObjectInputStream(socket.getInputStream());
+            ObjectInputStream clientInputStream = new ObjectInputStream(socket.getInputStream());
 
-                // Create an observable for incoming drawing events.
-                Observable<Object> clientDrawingEvents = Observable.create(emitter -> {
-                    while (!emitter.isDisposed()) {
+            // Create an observable for incoming drawing events.
+            Observable<Object> clientDrawingEvents = Observable.create(emitter -> {
+                while (!emitter.isDisposed()) {
+                    try {
                         Object receivedObject = clientInputStream.readObject();
 
                         // Emit the received object to subscribers.
                         emitter.onNext(receivedObject);
-                    }
-                });
-
-                // Create an observer for this client.
-                Observer<Object> clientObserver = new Observer<>() {
-                    @Override
-                    public void onSubscribe(@NonNull Disposable d) {
-                        // Iterate through the already drawn Shapes in the drawing and send them to the new client.
-                        for (Shape sentShape : drawing.getShapes()) {
-                            try {
-                                clientOutputStream.writeObject(sentShape);
-                                clientOutputStream.flush();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
+                    } catch (SocketException e) {
+                        // Handle client disconnect.
+                        clientSockets.remove(socket);
+                        clientOutputStreams.remove(socket);
+                        try {
+                            clientInputStream.close();
+                            clientOutputStream.close();
+                            socket.close();
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
                         }
-                    }
-
-                    @Override
-                    public void onNext(@NonNull Object object) {
-
-                        handleReceivedObject(object);
-
-                        if (object instanceof String && object.equals("client_shutdown")) {
-                            try {
-                                // Remove the socket from the lists.
-                                clientSockets.remove(socket);
-                                clientOutputStreams.remove(socket);
-
-                                // Close the socket.
-                                socket.close();
-
-                                // Close the associated output stream if it exists.
-                                ObjectOutputStream outputStream = clientOutputStreams.get(socket);
-                                if (outputStream != null) {
-                                    outputStream.close();
-                                }
-
-
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
+                        // Break out of the loop to terminate this client thread.
+                        break;
+                    } catch (IOException | ClassNotFoundException e) {
                         e.printStackTrace();
                     }
+                }
+            });
 
-                    @Override
-                    public void onComplete() {
-
+            // Create an observer for this client.
+            Observer<Object> clientObserver = new Observer<>() {
+                @Override
+                public void onSubscribe(@NonNull Disposable d) {
+                    // Iterate through the already drawn Shapes in the drawing and send them to the new client.
+                    for (Shape sentShape : drawing.getShapes()) {
+                        try {
+                            clientOutputStream.writeObject(sentShape);
+                            clientOutputStream.flush();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }
-                };
+                }
 
-                // Subscribe this client's observer to the observable.
-                clientDrawingEvents
-                        .observeOn(Schedulers.io())
-                        .subscribe(clientObserver);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-        clientThread.start();
+                @Override
+                public void onNext(@NonNull Object object) {
+                    handleReceivedObject(object);
+                    if (object instanceof String && object.equals("client_shutdown")) {
+                        try {
+                            // Remove the socket from the lists.
+                            clientSockets.remove(socket);
+                            clientOutputStreams.remove(socket);
+
+                            // Close the socket.
+                            clientInputStream.close();
+                            clientOutputStream.close();
+                            socket.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    e.printStackTrace();
+                }
+
+                @Override
+                public void onComplete() {
+
+                }
+            };
+
+            // Subscribe this client's observer to the observable.
+            clientDrawingEvents
+                    .observeOn(Schedulers.io())
+                    .subscribe(clientObserver);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -219,8 +229,6 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
             if (receivedObject instanceof String && receivedObject.equals("clear")) {
                 drawingPanel.clearDrawing();
                 sendClearEventToClients();
-            } else if (receivedObject instanceof String && receivedObject.equals("client_shutdown")) {
-
             } else if (receivedObject instanceof Shape) {
                 drawing.addShape((Shape) receivedObject);
                 drawingPanel.repaint();
@@ -278,6 +286,11 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+
+        // Stop all client threads.
+        for (Thread clientThread : clientThreads) {
+            clientThread.interrupt(); // Signal to the client threads that they should terminate.
         }
 
         // Close all client sockets.

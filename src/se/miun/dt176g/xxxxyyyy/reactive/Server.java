@@ -103,10 +103,19 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
                             Thread clientThread = new Thread(() -> handleIncomingConnection(socket));
                             clientThreads.add(clientThread);
                             clientThread.start();
-                        } catch (IOException e) {
+                        } catch (SocketException e) {
+                            // Ignore this exception when shutting down the server
+                            if (!acceptConnections) {
+                                return;
+                            }
+                            // Handle other exceptions as needed
                             emitter.onError(e);
                             break;
-                        } 
+                        } catch (IOException e) {
+                            // Handle exceptions as needed
+                            emitter.onError(e);
+                            break;
+                        }
                     }
                 })
                 .subscribeOn(Schedulers.io()) // Ensure this runs on a background thread.
@@ -280,8 +289,6 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
      */
     @Override
     public void shutDown() {
-        acceptConnections = false;
-
         // Notify connected clients about server shutdown.
         for (ObjectOutputStream outputStream : clientOutputStreams.values()) {
             try {
@@ -330,6 +337,7 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
      */
     @Override
     public void windowClosing(WindowEvent e) {
+        acceptConnections = false;
         shutDown();
     }
 

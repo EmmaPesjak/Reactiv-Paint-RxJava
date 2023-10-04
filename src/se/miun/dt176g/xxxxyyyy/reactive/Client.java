@@ -12,6 +12,7 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketException;
 
 /**
  * <h1>Client</h1>
@@ -113,6 +114,12 @@ public class Client implements ConnectionHandler, Serializable, WindowListener {
                             Object receivedObject = inputStream.readObject();
                             emitter.onNext(receivedObject);
                         }
+                    } catch (SocketException se) {
+                        // Handle the SocketException when the server disconnects.
+                        emitter.onComplete();
+                    } catch (EOFException eofe) {
+                        // Handle the EOFException when the server disconnects.
+                        emitter.onComplete();
                     } catch (IOException | ClassNotFoundException e) {
                         e.printStackTrace();
                     } finally {

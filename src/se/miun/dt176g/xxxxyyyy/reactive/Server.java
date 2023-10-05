@@ -17,9 +17,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * <h1>Server</h1>
@@ -30,18 +30,18 @@ import java.util.Map;
  * @since 	2023-10-05
  */
 public class Server implements ConnectionHandler, Serializable {
-    private final Drawing drawing = new Drawing();
+    private static final long serialVersionUID = 1L;
     private MainFrame mainFrame;
-    private ServerSocket serverSocket;
-    private boolean acceptConnections = true;
     public DrawingPanel drawingPanel;
     public static Menu menu = new Menu();
-    private static final long serialVersionUID = 1L;
+    private final Drawing drawing = new Drawing();
+    private boolean acceptConnections = true;
+    private ServerSocket serverSocket;
     private final List<Socket> clientSockets = new ArrayList<>();
-    private final Map<Socket, ObjectOutputStream> clientOutputStreams = new HashMap<>();
+    private final Map<Socket, ObjectOutputStream> clientOutputStreams = new ConcurrentHashMap<>();
     private final List<Thread> clientThreads = new ArrayList<>();
     private final PublishSubject<Object> outgoingDataObserver = PublishSubject.create();
-    private final Map<Socket, Observable<Object>> clientObservables = new HashMap<>();
+    private final Map<Socket, Observable<Object>> clientObservables = new ConcurrentHashMap<>();
 
     /**
      * Constructor which sets the DrawingPanel and ServerSocket.
@@ -138,7 +138,7 @@ public class Server implements ConnectionHandler, Serializable {
      * drawing events. It also sends existing drawing shapes to the new client.
      * @param socket is the socket representing the client connection.
      */
-    private void handleIncomingConnection(Socket socket) {
+    private synchronized void handleIncomingConnection(Socket socket) {
         try {
             clientSockets.add(socket);
             ObjectOutputStream clientOutputStream = new ObjectOutputStream(socket.getOutputStream());
@@ -176,19 +176,14 @@ public class Server implements ConnectionHandler, Serializable {
                 public void onSubscribe(@NonNull Disposable d) {
                     // Iterate through the already drawn Shapes in the drawing and send them to the new client.
                     for (Shape sentShape : drawing.getShapes()) {
-                        try {
-                            clientOutputStream.writeObject(sentShape);
-                            clientOutputStream.flush();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                        outgoingDataObserver.onNext(sentShape);
                     }
                 }
 
                 @Override
                 public void onNext(@NonNull Object object) {
                     handleReceivedObject(object);
-                    if (object instanceof String && object.equals("client_shutdown")) {
+                    if (object instanceof String && object.equals(Constants.CLIENT_SHUT_DOWN)) {
 
                         handleClientDisconnect(socket);
                         try {
@@ -232,9 +227,8 @@ public class Server implements ConnectionHandler, Serializable {
     @Override
     public void handleReceivedObject(Object receivedObject) {
         SwingUtilities.invokeLater(() -> {
-            if (receivedObject instanceof String && receivedObject.equals("clear")) {
-                drawingPanel.clearDrawing();
-                outgoingDataObserver.onNext("clear");
+            if (receivedObject instanceof String && receivedObject.equals(Constants.CLEAR)) {
+                clearEvent();
             } else if (receivedObject instanceof Shape) {
                 drawing.addShape((Shape) receivedObject);
                 drawingPanel.repaint();
@@ -278,7 +272,7 @@ public class Server implements ConnectionHandler, Serializable {
     @Override
     public void clearEvent() {
         drawingPanel.clearDrawing();
-        outgoingDataObserver.onNext("clear");
+        outgoingDataObserver.onNext(Constants.CLEAR);
     }
 
     /**
@@ -289,16 +283,7 @@ public class Server implements ConnectionHandler, Serializable {
         acceptConnections = false;
 
         // Notify connected clients about server shutdown.
-        for (ObjectOutputStream outputStream : clientOutputStreams.values()) {
-            try {
-                outputStream.writeObject("server_shutdown");
-                outputStream.flush();
-                outputStream.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
+        outgoingDataObserver.onNext(Constants.SERVER_SHUT_DOWN);
         outgoingDataObserver.onComplete();
 
         // Stop all client threads.

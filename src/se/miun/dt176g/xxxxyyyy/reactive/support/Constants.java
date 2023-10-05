@@ -18,6 +18,9 @@ public interface Constants {
     String FAIL_HOST_MSG = "Failed to host the server. Try again";
     String SERVER = "You are running the server";
     String SERVER_DC = "The server has disconnected, make sure a server is running and then restart.";
+    String CLEAR = "clear";
+    String SERVER_SHUT_DOWN = "server_shutdown";
+    String CLIENT_SHUT_DOWN = "client_shutdown";
 
     String ADDRESS = "localhost";
     int PORT = 12345;

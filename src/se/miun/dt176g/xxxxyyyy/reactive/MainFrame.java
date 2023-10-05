@@ -20,7 +20,6 @@ public class MainFrame extends JFrame {
 	private final JPanel contentPanel = new JPanel();
 	private JButton connectButton;
 	private Client client;
-	private Server server;
 
 	/**
 	 * Constructor setting the layout and interface.
@@ -43,14 +42,7 @@ public class MainFrame extends JFrame {
 		this.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
-				if (connectionHandler instanceof Client) {
-					System.out.println("closing client");
-					client.shutDown();
-				} else if (connectionHandler instanceof Server) {
-					System.out.println("closing server");
-
-					server.shutDown();
-				}
+				connectionHandler.shutDown();
 			}
 		});
 	}
@@ -84,7 +76,6 @@ public class MainFrame extends JFrame {
 	 * @param server is the server instance for which to set up the UI.
 	 */
 	private void initializeServerUI(Server server) {
-		this.server = server;
 		setUpDrawing(server.getDrawingPanel());
 		setStatusMessage(Constants.SERVER);
 	}

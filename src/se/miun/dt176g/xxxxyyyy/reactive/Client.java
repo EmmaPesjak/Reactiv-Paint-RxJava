@@ -21,15 +21,15 @@ import java.net.SocketException;
  * @since 	2023-10-05
  */
 public class Client implements ConnectionHandler, Serializable {
+    private static final long serialVersionUID = 1L;
     private Socket socket;
     private MainFrame mainFrame;
+    private DrawingPanel drawingPanel;
+    private Drawing drawing;
     private static final Menu menu = new Menu();
+    private Client client;
     private ObjectOutputStream outputStream;
     private ObjectInputStream inputStream;
-    private DrawingPanel drawingPanel;
-    private static final long serialVersionUID = 1L;
-    private Drawing drawing;
-    private Client client;
     private Observable<Object> incomingDataObservable;
     private Observer<Object> outgoingDataObserver;
     private boolean shouldTerminateIncomingDataObservable = false;
@@ -60,7 +60,7 @@ public class Client implements ConnectionHandler, Serializable {
     public void connectToServer() {
         client = this;
         // Create a worker thread to avoid blocking the Swing EDT.
-        SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
             @Override
             protected Void doInBackground() {
                 try {
@@ -166,19 +166,12 @@ public class Client implements ConnectionHandler, Serializable {
         SwingUtilities.invokeLater(() -> {
             if (receivedObject instanceof String) {
                 String message = (String) receivedObject;
-                if (message.equals("clear")) {
+                if (message.equals(Constants.CLEAR)) {
                     drawingPanel.clearDrawing();
-                } else if (message.equals("server_shutdown")) {
+                } else if (message.equals(Constants.SERVER_SHUT_DOWN)) {
                     mainFrame.removeDrawing();
                     mainFrame.setStatusMessage(Constants.SERVER_DC);
-
-                    try {
-                        socket.close();
-                        inputStream.close();
-                        outputStream.close();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+                    shutDown();
                 }
             } else if (receivedObject instanceof Shape) {
                 drawing.addShape((Shape) receivedObject);
@@ -202,7 +195,7 @@ public class Client implements ConnectionHandler, Serializable {
     public void clearEvent() {
         drawingPanel.clearDrawing();
         try {
-            outputStream.writeObject("clear");
+            outputStream.writeObject(Constants.CLEAR);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -214,7 +207,7 @@ public class Client implements ConnectionHandler, Serializable {
     @Override
     public void shutDown() {
         try {
-            outputStream.writeObject("client_shutdown");
+            outputStream.writeObject(Constants.CLIENT_SHUT_DOWN);
             outputStream.flush();
 
             // Set the flag to terminate the incoming data observable.

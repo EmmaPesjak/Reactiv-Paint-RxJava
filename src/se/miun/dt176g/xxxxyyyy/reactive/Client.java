@@ -8,8 +8,6 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import se.miun.dt176g.xxxxyyyy.reactive.support.Constants;
 
 import javax.swing.*;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
@@ -20,9 +18,9 @@ import java.net.SocketException;
  * communicating with it. Sets up a client GUI.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-10-04
+ * @since 	2023-10-05
  */
-public class Client implements ConnectionHandler, Serializable, WindowListener {
+public class Client implements ConnectionHandler, Serializable {
     private Socket socket;
     private MainFrame mainFrame;
     private static final Menu menu = new Menu();
@@ -232,61 +230,5 @@ public class Client implements ConnectionHandler, Serializable, WindowListener {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void windowOpened(WindowEvent e) {
-        // Not needed.
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void windowClosing(WindowEvent e) {
-        shutDown();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void windowClosed(WindowEvent e) {
-        // Not needed.
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void windowIconified(WindowEvent e) {
-        // Not needed.
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void windowDeiconified(WindowEvent e) {
-        // Not needed.
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void windowActivated(WindowEvent e) {
-        // Not needed.
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void windowDeactivated(WindowEvent e) {
-        // Not needed.
     }
 }

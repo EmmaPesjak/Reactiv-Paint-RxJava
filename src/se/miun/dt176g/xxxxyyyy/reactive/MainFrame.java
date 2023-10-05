@@ -3,6 +3,8 @@ package se.miun.dt176g.xxxxyyyy.reactive;
 import se.miun.dt176g.xxxxyyyy.reactive.support.Constants;
 
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import javax.swing.*;
 
 /**
@@ -10,7 +12,7 @@ import javax.swing.*;
  * JFrame for the application's GUI.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-10-04
+ * @since 	2023-10-05
  */
 @SuppressWarnings("serial")
 public class MainFrame extends JFrame {
@@ -18,6 +20,7 @@ public class MainFrame extends JFrame {
 	private final JPanel contentPanel = new JPanel();
 	private JButton connectButton;
 	private Client client;
+	private Server server;
 
 	/**
 	 * Constructor setting the layout and interface.
@@ -35,6 +38,21 @@ public class MainFrame extends JFrame {
 		this.add(statusLabel, BorderLayout.SOUTH);
 
 		initializeUI(connectionHandler, menu);
+
+		// Add window listener for shutdown.
+		this.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				if (connectionHandler instanceof Client) {
+					System.out.println("closing client");
+					client.shutDown();
+				} else if (connectionHandler instanceof Server) {
+					System.out.println("closing server");
+
+					server.shutDown();
+				}
+			}
+		});
 	}
 
 	/**
@@ -66,6 +84,7 @@ public class MainFrame extends JFrame {
 	 * @param server is the server instance for which to set up the UI.
 	 */
 	private void initializeServerUI(Server server) {
+		this.server = server;
 		setUpDrawing(server.getDrawingPanel());
 		setStatusMessage(Constants.SERVER);
 	}

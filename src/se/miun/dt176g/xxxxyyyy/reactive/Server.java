@@ -9,8 +9,6 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 import se.miun.dt176g.xxxxyyyy.reactive.support.Constants;
 
 import javax.swing.*;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -29,9 +27,9 @@ import java.util.Map;
  * The server also have it's own GUI.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-10-04
+ * @since 	2023-10-05
  */
-public class Server implements ConnectionHandler, Serializable, WindowListener {
+public class Server implements ConnectionHandler, Serializable {
     private final Drawing drawing = new Drawing();
     private MainFrame mainFrame;
     private ServerSocket serverSocket;
@@ -95,7 +93,6 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
      * Starts the server by accepting incoming connections in a separate thread.
      */
     public void startServer() {
-        mainFrame.addWindowListener(this);
         Observable.create(emitter -> {
                     while (acceptConnections) {
                         try {
@@ -289,6 +286,8 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
      */
     @Override
     public void shutDown() {
+        acceptConnections = false;
+
         // Notify connected clients about server shutdown.
         for (ObjectOutputStream outputStream : clientOutputStreams.values()) {
             try {
@@ -322,62 +321,5 @@ public class Server implements ConnectionHandler, Serializable, WindowListener {
         } catch (IOException e) {
             handleServerSocketError(e);
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void windowOpened(WindowEvent e) {
-        // Not needed.
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void windowClosing(WindowEvent e) {
-        acceptConnections = false;
-        shutDown();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void windowClosed(WindowEvent e) {
-        // Not needed.
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void windowIconified(WindowEvent e) {
-        // Not needed.
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void windowDeiconified(WindowEvent e) {
-        // Not needed.
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void windowActivated(WindowEvent e) {
-        // Not needed.
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void windowDeactivated(WindowEvent e) {
-        // Not needed.
     }
 }

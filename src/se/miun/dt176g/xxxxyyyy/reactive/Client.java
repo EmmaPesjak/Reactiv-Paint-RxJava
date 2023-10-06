@@ -80,7 +80,6 @@ public class Client implements ConnectionHandler, Serializable {
             } catch (IOException e) {
                 mainFrame.setUpFailedToConnect();
                 e.printStackTrace();
-                emitter.onError(e);
             }
         })
         .subscribeOn(Schedulers.io()) // Use Schedulers to avoid blocking the Swing EDT.
@@ -112,10 +111,7 @@ public class Client implements ConnectionHandler, Serializable {
                     Object receivedObject = inputStream.readObject();
                     emitter.onNext(receivedObject);
                 }
-            } catch (SocketException se) {
-                // Handle the SocketException when the server disconnects.
-                emitter.onComplete();
-            } catch (EOFException eofe) {
+            } catch (EOFException eo) {
                 // Handle the EOFException when the server disconnects.
                 emitter.onComplete();
             } catch (IOException | ClassNotFoundException e) {
@@ -171,7 +167,6 @@ public class Client implements ConnectionHandler, Serializable {
                 } else if (message.equals(Constants.SERVER_SHUT_DOWN)) {
                     mainFrame.removeDrawing();
                     mainFrame.setStatusMessage(Constants.SERVER_DC);
-                    shutDown();
                 }
             } else if (receivedObject instanceof Shape) {
                 drawing.addShape((Shape) receivedObject);
@@ -209,13 +204,13 @@ public class Client implements ConnectionHandler, Serializable {
             // Set the flag to terminate the incoming data observable.
             shouldTerminateIncomingDataObservable = true;
 
-            // Close the socket and the associated streams.
-            socket.close();
-            outputStream.close();
-            inputStream.close();
-
             // Notify the observer to complete.
             outgoingDataObserver.onComplete();
+
+            // Close the socket and streams.
+            outputStream.close();
+            inputStream.close();
+            socket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

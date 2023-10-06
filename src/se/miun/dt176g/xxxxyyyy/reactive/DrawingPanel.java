@@ -21,6 +21,7 @@ public class DrawingPanel extends JPanel {
 	public int selectedThickness = 2; // Default thickness.
 	public String selectedShape = "Freehand"; // Default shape type.
 	private final ConnectionHandler connectionHandler; // Owner of the drawing panel.
+	private final PublishSubject<Shape> shapePublishSubject = PublishSubject.create();
 
 	/**
 	 * Constructor which creates the mouse event listeners and subscribes to the menu observables.
@@ -30,6 +31,9 @@ public class DrawingPanel extends JPanel {
 	public DrawingPanel(Drawing drawing, Menu menu, ConnectionHandler connectionHandler) {
 		this.drawing = drawing;
 		this.connectionHandler = connectionHandler;
+
+		// Subscribe to Shapes being drawn.
+		shapePublishSubject.subscribe(this::sendShapeToConnectionHandler);
 
 		// Create a subject for mouse events.
 		PublishSubject<MouseEvent> mouseEventSubject = PublishSubject.create();
@@ -46,7 +50,7 @@ public class DrawingPanel extends JPanel {
 			@Override
 			public void mouseReleased(MouseEvent e) {
 				// Pass forward the finished shape.
-				connectionHandler.sendShape(currentShape);
+				shapePublishSubject.onNext(currentShape);
 			}
 		});
 
@@ -70,6 +74,15 @@ public class DrawingPanel extends JPanel {
 
 		// Subscribe to the mouse event observable to handle drawing.
 		mouseEventObservable.subscribe(this::handleMouseEvent);
+	}
+
+	/**
+	 * Sends a given shape object to the connection handler,
+	 * which facilitates communication with remote clients or servers.
+	 * @param shape is the shape object to be sent.
+	 */
+	private void sendShapeToConnectionHandler(Shape shape) {
+		connectionHandler.sendShape(shape);
 	}
 
 	/**

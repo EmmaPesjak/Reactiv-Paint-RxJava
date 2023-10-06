@@ -5,7 +5,6 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.Optional;
 import javax.swing.*;
 
 /**
@@ -13,7 +12,7 @@ import javax.swing.*;
  * Creates a Canvas-object for displaying all graphics drawn.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-09-28
+ * @since 	2023-10-06
  */
 public class DrawingPanel extends JPanel {
 	private final Drawing drawing; // Container for the Shapes.
@@ -21,8 +20,7 @@ public class DrawingPanel extends JPanel {
 	public Color selectedColor = Color.PINK; // Default color.
 	public int selectedThickness = 2; // Default thickness.
 	public String selectedShape = "Freehand"; // Default shape type.
-	private Client client; // Possible owner of the drawing panel.
-	private Server server; // Possible owner of the drawing panel.
+	private final ConnectionHandler connectionHandler; // Owner of the drawing panel.
 
 	/**
 	 * Constructor which creates the mouse event listeners and subscribes to the menu observables.
@@ -31,9 +29,7 @@ public class DrawingPanel extends JPanel {
 	 */
 	public DrawingPanel(Drawing drawing, Menu menu, ConnectionHandler connectionHandler) {
 		this.drawing = drawing;
-		// Set the client or server.
-		this.client = (connectionHandler instanceof Client) ? (Client) connectionHandler : this.client;
-		this.server = (connectionHandler instanceof Server) ? (Server) connectionHandler : this.server;
+		this.connectionHandler = connectionHandler;
 
 		// Create a subject for mouse events.
 		PublishSubject<MouseEvent> mouseEventSubject = PublishSubject.create();
@@ -50,8 +46,7 @@ public class DrawingPanel extends JPanel {
 			@Override
 			public void mouseReleased(MouseEvent e) {
 				// Pass forward the finished shape.
-				Optional.ofNullable(client).ifPresent(c -> c.sendShapeToServer(currentShape));
-				Optional.ofNullable(server).ifPresent(s -> s.sendShapeToClients(currentShape));
+				connectionHandler.sendShape(currentShape);
 			}
 		});
 
@@ -168,8 +163,7 @@ public class DrawingPanel extends JPanel {
 	 * Clears the drawing and notifies the associated client/server, about the clear event.
 	 */
 	public void onClear() {
-		Optional.ofNullable(client).ifPresent(Client::clearEvent);
-		Optional.ofNullable(server).ifPresent(Server::clearEvent);
+		connectionHandler.clearEvent();
 	}
 
 	/**

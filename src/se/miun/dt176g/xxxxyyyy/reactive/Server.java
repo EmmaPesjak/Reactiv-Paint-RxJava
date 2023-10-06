@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * The server also have it's own GUI.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-10-05
+ * @since 	2023-10-06
  */
 public class Server implements ConnectionHandler, Serializable {
     private static final long serialVersionUID = 1L;
@@ -94,41 +94,33 @@ public class Server implements ConnectionHandler, Serializable {
      */
     public void startServer() {
         Observable.create(emitter -> {
-                    while (acceptConnections) {
-                        try {
-                            Socket socket = serverSocket.accept();
-                            Thread clientThread = new Thread(() -> handleIncomingConnection(socket));
-                            clientThreads.add(clientThread);
-                            clientThread.start();
-                        } catch (SocketException e) {
-                            // Ignore this exception when shutting down the server
-                            if (!acceptConnections) {
-                                return;
-                            }
-                            // Handle other exceptions as needed
-                            emitter.onError(e);
-                            break;
-                        } catch (IOException e) {
-                            // Handle exceptions as needed
-                            emitter.onError(e);
-                            break;
-                        }
+            while (acceptConnections) {
+                try {
+                    Socket socket = serverSocket.accept();
+                    Thread clientThread = new Thread(() -> handleIncomingConnection(socket));
+                    clientThreads.add(clientThread);
+                    clientThread.start();
+                } catch (SocketException e) {
+                    // Ignore this exception when shutting down the server
+                    if (!acceptConnections) {
+                        return;
                     }
-                })
-                .subscribeOn(Schedulers.io()) // Ensure this runs on a background thread.
-                .subscribe(
-                        value -> {
-                        },
-                        Throwable::printStackTrace
-                );
-    }
-
-    /**
-     * Sends a Shape to all connected clients.
-     * @param shape the Shape to send.
-     */
-    public void sendShapeToClients(Shape shape) {
-        outgoingDataObserver.onNext(shape);
+                    // Handle other exceptions as needed
+                    emitter.onError(e);
+                    break;
+                } catch (IOException e) {
+                    // Handle exceptions as needed
+                    emitter.onError(e);
+                    break;
+                }
+            }
+        })
+        .subscribeOn(Schedulers.io()) // Ensure this runs on a background thread.
+        .subscribe(
+                value -> {
+                },
+                Throwable::printStackTrace
+        );
     }
 
     /**
@@ -214,6 +206,14 @@ public class Server implements ConnectionHandler, Serializable {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void sendShape(Shape shape) {
+        outgoingDataObserver.onNext(shape);
+    }
+
+    /**
      * Getter for the server's DrawingPanel.
      * @return the DrawingPanel.
      */
@@ -232,7 +232,7 @@ public class Server implements ConnectionHandler, Serializable {
             } else if (receivedObject instanceof Shape) {
                 drawing.addShape((Shape) receivedObject);
                 drawingPanel.repaint();
-                sendShapeToClients((Shape) receivedObject);
+                sendShape((Shape) receivedObject);
             }
         });
     }

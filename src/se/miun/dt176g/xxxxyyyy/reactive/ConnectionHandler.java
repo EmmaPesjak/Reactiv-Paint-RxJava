@@ -5,7 +5,7 @@ package se.miun.dt176g.xxxxyyyy.reactive;
  * Interface for server/clients.
  * @author 	Emma Pesjak
  * @version 1.0
- * @since 	2023-10-03
+ * @since 	2023-10-06
  */
 public interface ConnectionHandler {
 
@@ -31,4 +31,10 @@ public interface ConnectionHandler {
      * Handles shutdown gracefully, disposing recourses.
      */
     void shutDown();
+
+    /**
+     * Sends a Shape object to the server/clients using the outgoing data observer.
+     * @param shape is the Shape to send.
+     */
+    void sendShape(Shape shape);
 }

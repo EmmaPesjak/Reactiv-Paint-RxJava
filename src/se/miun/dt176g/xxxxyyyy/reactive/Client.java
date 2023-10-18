@@ -9,6 +9,7 @@ import se.miun.dt176g.xxxxyyyy.reactive.support.Constants;
 
 import javax.swing.*;
 import java.io.*;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
 
@@ -77,8 +78,9 @@ public class Client implements ConnectionHandler, Serializable {
                 incomingDataObservable = createIncomingDataObservable();
                 outgoingDataObserver = createOutgoingDataObserver();
                 subscribeToIncomingData();
-            } catch (IOException e) {
+            } catch (ConnectException ce) {
                 mainFrame.setUpFailedToConnect();
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         })
@@ -111,6 +113,9 @@ public class Client implements ConnectionHandler, Serializable {
                     Object receivedObject = inputStream.readObject();
                     emitter.onNext(receivedObject);
                 }
+            } catch (SocketException se) {
+                // Handle the SocketException when the client disconnects.
+                emitter.onComplete();
             } catch (EOFException eo) {
                 // Handle the EOFException when the server disconnects.
                 emitter.onComplete();
@@ -198,19 +203,22 @@ public class Client implements ConnectionHandler, Serializable {
     @Override
     public void shutDown() {
         try {
-            // Notify the server.
-            outgoingDataObserver.onNext(Constants.CLIENT_SHUT_DOWN);
+            if (socket != null && !socket.isClosed()) {
+                // Notify the server.
+                outgoingDataObserver.onNext(Constants.CLIENT_SHUT_DOWN);
 
-            // Set the flag to terminate the incoming data observable.
-            shouldTerminateIncomingDataObservable = true;
+                // Set the flag to terminate the incoming data observable.
+                shouldTerminateIncomingDataObservable = true;
 
-            // Notify the observer to complete.
-            outgoingDataObserver.onComplete();
-
-            // Close the socket and streams.
-            outputStream.close();
-            inputStream.close();
-            socket.close();
+                // Close the socket and streams.
+                try {
+                    outputStream.close();
+                    inputStream.close();
+                    socket.close();
+                } catch (SocketException se) {
+                    // Handle SocketException when closing, this is expected and can be ignored.
+                }
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }

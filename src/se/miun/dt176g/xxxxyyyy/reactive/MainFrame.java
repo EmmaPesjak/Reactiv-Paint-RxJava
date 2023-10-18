@@ -127,16 +127,23 @@ public class MainFrame extends JFrame {
 	 * This method is typically called when a connection attempt fails.
 	 */
 	public void setUpFailedToConnect() {
-		JPanel panel = new JPanel();
-		JLabel failText = new JLabel(Constants.FAIL_CONNECT_MSG);
-		failText.setFont(new Font("Arial", Font.PLAIN, 24));
-		panel.add(failText);
-		contentPanel.add(panel, BorderLayout.CENTER);
+		SwingUtilities.invokeLater(() -> {
+			JOptionPane.showMessageDialog(
+					this,
+					Constants.FAIL_CONNECT_MSG,
+					"Connection Error",
+					JOptionPane.ERROR_MESSAGE
+			);
 
-		connectButton = new JButton(Constants.CONNECT_BTN);
-		// Add an ActionListener to the button for handling the connection to the server.
-		connectButton.addActionListener(e -> connectToServerAndGetDrawing());
-		contentPanel.add(connectButton, BorderLayout.SOUTH);
+			// Add a button to retry the connection
+			connectButton = new JButton(Constants.CONNECT_BTN);
+			connectButton.addActionListener(e -> connectToServerAndGetDrawing());
+			contentPanel.add(connectButton, BorderLayout.SOUTH);
+
+			// Revalidate and repaint the content panel to update the UI
+			contentPanel.revalidate();
+			contentPanel.repaint();
+		});
 	}
 
 	/**

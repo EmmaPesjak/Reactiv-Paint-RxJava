@@ -9,10 +9,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 import se.miun.dt176g.xxxxyyyy.reactive.support.Constants;
 
 import javax.swing.*;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -147,7 +144,7 @@ public class Server implements ConnectionHandler, Serializable {
 
                         // Emit the received object to subscribers.
                         emitter.onNext(receivedObject);
-                    } catch (SocketException e) {
+                    } catch (SocketException | EOFException e) {
                         handleClientDisconnect(socket);
                         clientInputStream.close();
                         emitter.onComplete();
@@ -288,7 +285,7 @@ public class Server implements ConnectionHandler, Serializable {
 
         // Stop all client threads.
         for (Thread clientThread : clientThreads) {
-            clientThread.interrupt(); // Signal to the client threads that they should terminate.
+            clientThread.interrupt();
         }
 
         // Close all client sockets.
